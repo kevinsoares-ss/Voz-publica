@@ -1,0 +1,35 @@
+{
+  "name": "@voz-publica/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "db:format": "prisma format",
+    "db:validate": "prisma validate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:test": "tsc --noEmit -p tsconfig.test.json && tsx --test tests/database.integration.test.ts tests/api.integration.test.ts tests/camara.integration.test.ts tests/senado.integration.test.ts tests/records.integration.test.ts tests/cgu.integration.test.ts",
+    "camara:sync:representatives": "tsx src/integrations/camara/sync-representatives.ts",
+    "senado:sync:representatives": "tsx src/integrations/senado/sync-senators.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.9",
+    "fast-xml-parser": "^5.11.2",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  }
+}

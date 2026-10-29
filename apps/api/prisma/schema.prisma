@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SourceType {
+  CAMARA_API
+  SENADO_API
+  CGU_API
+  TSE_API
+  TCE_API
+  OFFICIAL_DOCUMENT
+  NEWS
+  MANUAL
+  OTHER
+}
+
+enum Sphere {
+  FEDERAL
+  STATE
+  MUNICIPAL
+}
+
+enum PowerBranch {
+  EXECUTIVE
+  LEGISLATIVE
+}
+
+enum PoliticianRole {
+  PRESIDENT
+  GOVERNOR
+  MAYOR
+  SENATOR
+  FEDERAL_DEPUTY
+  STATE_DEPUTY
+  CITY_COUNCILLOR
+}
+
+enum ImpactType {
+  POSITIVE_DELIVERY
+  CRITICAL_ALERT
+  NEUTRAL_METRIC
+}
+
+enum CommitmentStatus {
+  A_VERIFICAR
+  EM_ANDAMENTO
+  CUMPRIDO
+  PARCIALMENTE_CUMPRIDO
+  NAO_CUMPRIDO
+  SEM_INFORMACAO_SUFICIENTE
+}
+
+model Source {
+  id                      String                   @id @default(uuid())
+  type                    SourceType
+  name                    String
+  url                     String
+  publishedAt             DateTime?
+  consultedAt             DateTime                 @default(now())
+  metadata                Json?
+  createdAt               DateTime                 @default(now())
+  representatives         Representative[]
+  mandates                Mandate[]
+  proposals               Proposal[]
+  representativeProposals RepresentativeProposal[]
+  votings                 Voting[]
+  proposalVotings         ProposalVoting[]
+  expenses                Expense[]
+  commitments             Commitment[]
+  evidences               Evidence[]
+  governmentActions       GovernmentAction[]
+
+  @@index([type, consultedAt])
+}
+
+model Representative {
+  id                String                   @id @default(uuid())
+  sourceNamespace   String                   @default("camara")
+  externalId        String
+  name              String
+  civilName         String?
+  role              PoliticianRole           @default(FEDERAL_DEPUTY)
+  sphere            Sphere                   @default(FEDERAL)
+  powerBranch       PowerBranch              @default(LEGISLATIVE)
+  party             String?
+  state             String?
+  city              String?
+  photoUrl          String?
+  sourceUrl         String?
+  lastSyncedAt      DateTime
+  sourceId          String
+  source            Source                   @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  mandates          Mandate[]
+  proposals         RepresentativeProposal[]
+  expenses          Expense[]
+  commitments       Commitment[]
+  governmentActions GovernmentAction[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@unique([sourceNamespace, externalId])
+  @@index([name])
+  @@index([state, party])
+  @@index([role, sphere, state, city])
+}
+
+model Mandate {
+  id               String         @id @default(uuid())
+  externalId       String?
+  representativeId String
+  representative   Representative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  status           String?
+  sourceId         String
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  lastSyncedAt     DateTime
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([representativeId, startsAt])
+  @@index([sourceId, externalId])
+}
+
+model Proposal {
+  id              String                   @id @default(uuid())
+  sourceNamespace String                   @default("camara")
+  externalId      String
+  type            String?
+  number          Int?
+  year            Int?
+  summary         String?
+  status          String?
+  presentedAt     DateTime?
+  sourceId        String
+  source          Source                   @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  lastSyncedAt    DateTime
+  representatives RepresentativeProposal[]
+  votings         ProposalVoting[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@unique([sourceNamespace, externalId])
+  @@index([type, year, number])
+}
+
+model RepresentativeProposal {
+  id               String         @id @default(uuid())
+  representativeId String
+  proposalId       String
+  role             String?
+  sourceId         String
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  representative   Representative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  proposal         Proposal       @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  createdAt        DateTime       @default(now())
+
+  @@unique([representativeId, proposalId])
+  @@index([proposalId])
+}
+
+model Voting {
+  id              String           @id @default(uuid())
+  sourceNamespace String           @default("camara")
+  externalId      String
+  heldAt          DateTime?
+  description     String?
+  approval        Boolean?
+  sourceId        String
+  source          Source           @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  lastSyncedAt    DateTime
+  proposals       ProposalVoting[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([sourceNamespace, externalId])
+  @@index([heldAt])
+}
+
+model ProposalVoting {
+  proposalId String
+  votingId   String
+  sourceId   String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  voting     Voting   @relation(fields: [votingId], references: [id], onDelete: Restrict)
+  source     Source   @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@id([proposalId, votingId])
+  @@index([votingId])
+}
+
+model Expense {
+  id               String         @id @default(uuid())
+  externalId       String?
+  representativeId String
+  representative   Representative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  year             Int?
+  month            Int?
+  category         String?
+  supplier         String?
+  value            String?
+  sourceId         String
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  lastSyncedAt     DateTime
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([representativeId, year, month])
+  @@index([sourceId, externalId])
+}
+
+model Commitment {
+  id               String              @id @default(uuid())
+  title            String
+  description      String
+  representativeId String?
+  representative   Representative?     @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  registeredAt     DateTime?
+  deadline         DateTime?
+  status           CommitmentStatus    @default(A_VERIFICAR)
+  evaluationMethod String
+  reviewer         String?
+  sourceId         String
+  source           Source              @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  evidences        Evidence[]
+  history          CommitmentHistory[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([representativeId, status])
+  @@index([status, createdAt])
+}
+
+model GovernmentAction {
+  id               String         @id @default(uuid())
+  representativeId String
+  representative   Representative @relation(fields: [representativeId], references: [id], onDelete: Restrict)
+  title            String
+  description      String
+  type             ImpactType
+  category         String
+  evidenceUrl      String
+  sourceName       String
+  eventDate        DateTime
+  sourceId         String
+  source           Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  createdAt        DateTime       @default(now())
+
+  @@index([representativeId, eventDate])
+  @@index([type, eventDate])
+}
+
+model Evidence {
+  id           String                      @id @default(uuid())
+  commitmentId String
+  commitment   Commitment                  @relation(fields: [commitmentId], references: [id], onDelete: Restrict)
+  type         String?
+  description  String
+  factAt       DateTime?
+  observation  String?
+  reviewer     String?
+  sourceId     String
+  source       Source                      @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  consultedAt  DateTime                    @default(now())
+  historyLinks CommitmentHistoryEvidence[]
+  createdAt    DateTime                    @default(now())
+
+  @@index([commitmentId, factAt])
+}
+
+model CommitmentHistory {
+  id             String                      @id @default(uuid())
+  commitmentId   String
+  commitment     Commitment                  @relation(fields: [commitmentId], references: [id], onDelete: Restrict)
+  previousStatus CommitmentStatus?
+  newStatus      CommitmentStatus
+  rationale      String
+  changedAt      DateTime                    @default(now())
+  reviewer       String?
+  evidences      CommitmentHistoryEvidence[]
+
+  @@index([commitmentId, changedAt])
+}
+
+model CommitmentHistoryEvidence {
+  historyId  String
+  evidenceId String
+  history    CommitmentHistory @relation(fields: [historyId], references: [id], onDelete: Restrict)
+  evidence   Evidence          @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+
+  @@id([historyId, evidenceId])
+  @@index([evidenceId])
+}

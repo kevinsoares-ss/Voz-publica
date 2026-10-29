@@ -1,0 +1,369 @@
+﻿{
+    "project":  "Voz Publica",
+    "source":  "Camara dos Deputados Open Data",
+    "apiBaseUrl":  "https://dadosabertos.camara.leg.br/api/v2",
+    "runStartedAt":  "2026-10-28T18:31:36.1387449-03:00",
+    "runFinishedAt":  "2026-10-28T18:31:39.4501186-03:00",
+    "durationMs":  3311,
+    "endpoints":  [
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026itens=10\u0026ordenarPor=nome",
+                          "parameters":  {
+                                             "ordem":  "ASC",
+                                             "itens":  "10",
+                                             "ordenarPor":  "nome"
+                                         },
+                          "testedAt":  "2026-10-28T18:31:36.1657434-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  342,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  10
+                                             },
+                          "usefulFields":  [
+                                               "id",
+                                               "uri",
+                                               "nome",
+                                               "siglaPartido",
+                                               "uriPartido",
+                                               "siglaUf",
+                                               "idLegislatura",
+                                               "urlFoto",
+                                               "email"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026ordenarPor=nome\u0026pagina=2\u0026itens=10",
+                                             "links":  [
+                                                           {
+                                                               "rel":  "self",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026ordenarPor=nome\u0026itens=10"
+                                                           },
+                                                           {
+                                                               "rel":  "next",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026ordenarPor=nome\u0026pagina=2\u0026itens=10"
+                                                           },
+                                                           {
+                                                               "rel":  "first",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026ordenarPor=nome\u0026pagina=1\u0026itens=10"
+                                                           },
+                                                           {
+                                                               "rel":  "last",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados?ordem=ASC\u0026ordenarPor=nome\u0026pagina=52\u0026itens=10"
+                                                           }
+                                                       ]
+                                         },
+                          "sampleOfficialId":  204379,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/deputados/204379",
+                          "parameters":  {
+
+                                         },
+                          "testedAt":  "2026-10-28T18:31:36.5439633-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  121,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "PSCustomObject",
+                                                 "dataCount":  1
+                                             },
+                          "usefulFields":  [
+                                               "id",
+                                               "uri",
+                                               "nomeCivil",
+                                               "ultimoStatus",
+                                               "cpf",
+                                               "sexo",
+                                               "urlWebsite",
+                                               "redeSocial",
+                                               "dataNascimento",
+                                               "dataFalecimento",
+                                               "ufNascimento",
+                                               "municipioNascimento",
+                                               "escolaridade"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados/204379"
+                                                       }
+                                         },
+                          "sampleOfficialId":  204379,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/deputados/204379/despesas?ano=2025\u0026itens=10",
+                          "parameters":  {
+                                             "ano":  "2025",
+                                             "itens":  "10"
+                                         },
+                          "testedAt":  "2026-10-28T18:31:36.6709631-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  91,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  0
+                                             },
+                          "usefulFields":  [
+
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/deputados/204379/despesas?ano=2025\u0026itens=10"
+                                                       }
+                                         },
+                          "sampleOfficialId":  null,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?itens=10\u0026siglaTipo=PL\u0026ano=2020",
+                          "parameters":  {
+                                             "itens":  "10",
+                                             "siglaTipo":  "PL",
+                                             "ano":  "2020"
+                                         },
+                          "testedAt":  "2026-10-28T18:31:36.7629626-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  1960,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  10
+                                             },
+                          "usefulFields":  [
+                                               "id",
+                                               "uri",
+                                               "siglaTipo",
+                                               "codTipo",
+                                               "numero",
+                                               "ano",
+                                               "ementa",
+                                               "dataApresentacao"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?siglaTipo=PL\u0026ano=2020\u0026pagina=2\u0026itens=10",
+                                             "links":  [
+                                                           {
+                                                               "rel":  "self",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?itens=10\u0026siglaTipo=PL\u0026ano=2020"
+                                                           },
+                                                           {
+                                                               "rel":  "next",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?siglaTipo=PL\u0026ano=2020\u0026pagina=2\u0026itens=10"
+                                                           },
+                                                           {
+                                                               "rel":  "first",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?siglaTipo=PL\u0026ano=2020\u0026pagina=1\u0026itens=10"
+                                                           },
+                                                           {
+                                                               "rel":  "last",
+                                                               "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes?siglaTipo=PL\u0026ano=2020\u0026pagina=475\u0026itens=10"
+                                                           }
+                                                       ]
+                                         },
+                          "sampleOfficialId":  285815,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815",
+                          "parameters":  {
+
+                                         },
+                          "testedAt":  "2026-10-28T18:31:38.7241191-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  134,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "PSCustomObject",
+                                                 "dataCount":  1
+                                             },
+                          "usefulFields":  [
+                                               "id",
+                                               "uri",
+                                               "siglaTipo",
+                                               "codTipo",
+                                               "numero",
+                                               "ano",
+                                               "ementa",
+                                               "dataApresentacao",
+                                               "uriOrgaoNumerador",
+                                               "statusProposicao",
+                                               "uriAutores",
+                                               "descricaoTipo",
+                                               "ementaDetalhada",
+                                               "keywords",
+                                               "uriPropPrincipal",
+                                               "uriPropAnterior",
+                                               "uriPropPosterior",
+                                               "urlInteiroTeor",
+                                               "urnFinal",
+                                               "texto",
+                                               "justificativa"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815"
+                                                       }
+                                         },
+                          "sampleOfficialId":  285815,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815/tramitacoes",
+                          "parameters":  {
+
+                                         },
+                          "testedAt":  "2026-10-28T18:31:38.8601198-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  306,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  81
+                                             },
+                          "usefulFields":  [
+                                               "dataHora",
+                                               "sequencia",
+                                               "siglaOrgao",
+                                               "uriOrgao",
+                                               "uriUltimoRelator",
+                                               "regime",
+                                               "descricaoTramitacao",
+                                               "codTipoTramitacao",
+                                               "descricaoSituacao",
+                                               "codSituacao",
+                                               "despacho",
+                                               "url",
+                                               "ambito",
+                                               "apreciacao"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815/tramitacoes"
+                                                       }
+                                         },
+                          "sampleOfficialId":  null,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815/votacoes",
+                          "parameters":  {
+
+                                         },
+                          "testedAt":  "2026-10-28T18:31:39.1681200-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  93,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  4
+                                             },
+                          "usefulFields":  [
+                                               "id",
+                                               "uri",
+                                               "data",
+                                               "dataHoraRegistro",
+                                               "siglaOrgao",
+                                               "uriOrgao",
+                                               "uriEvento",
+                                               "proposicaoObjeto",
+                                               "uriProposicaoObjeto",
+                                               "descricao",
+                                               "aprovacao"
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/proposicoes/285815/votacoes"
+                                                       }
+                                         },
+                          "sampleOfficialId":  "285815-115",
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      },
+                      {
+                          "method":  "GET",
+                          "url":  "https://dadosabertos.camara.leg.br/api/v2/votacoes/285815-115/votos",
+                          "parameters":  {
+
+                                         },
+                          "testedAt":  "2026-10-28T18:31:39.2631211-03:00",
+                          "httpStatus":  200,
+                          "durationMs":  184,
+                          "responseFormat":  {
+                                                 "rootFields":  [
+                                                                    "dados",
+                                                                    "links"
+                                                                ],
+                                                 "dataType":  "array",
+                                                 "dataCount":  0
+                                             },
+                          "usefulFields":  [
+
+                                           ],
+                          "pagination":  {
+                                             "nextPage":  null,
+                                             "links":  {
+                                                           "rel":  "self",
+                                                           "href":  "https://dadosabertos.camara.leg.br/api/v2/votacoes/285815-115/votos"
+                                                       }
+                                         },
+                          "sampleOfficialId":  null,
+                          "backendNormalizationDecision":  "Preserve source fields and record the URL, query time, and official identifier.",
+                          "error":  null,
+                          "result":  "success"
+                      }
+                  ]
+}

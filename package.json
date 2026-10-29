@@ -1,0 +1,17 @@
+{
+  "name": "voz-publica",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.0"
+  },
+  "scripts": {
+    "dev:api": "npm run dev --workspace @voz-publica/api",
+    "dev:mobile": "npm run start --workspace @voz-publica/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
