@@ -201,9 +201,9 @@ async function handleRequest(
   sendError(response, 404, "NOT_FOUND", "Route was not found.");
 }
 
-export function createApiServer(options: { cguClient?: CguClient } = {}) {
+export function createApiHandler(options: { cguClient?: CguClient } = {}) {
   const cguClient = options.cguClient ?? new CguClient();
-  return createServer((request, response) => {
+  return (request: IncomingMessage, response: ServerResponse) => {
     void handleRequest(request, response, cguClient).catch((error: unknown) => {
       console.error("API request failed", {
         method: request.method,
@@ -216,5 +216,9 @@ export function createApiServer(options: { cguClient?: CguClient } = {}) {
         response.destroy();
       }
     });
-  });
+  };
+}
+
+export function createApiServer(options: { cguClient?: CguClient } = {}) {
+  return createServer(createApiHandler(options));
 }

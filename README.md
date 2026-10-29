@@ -106,6 +106,23 @@ foram preservados em `apps/api/prisma/dev.db` e
 `apps/api/prisma/sqlite-migrations/`; os registros oficiais de demonstração
 são carregados novamente pelas sincronizações acima.
 
+## Publicação da API na Vercel
+
+Crie um projeto Vercel ligado ao repositório e defina `apps/api` como
+**Root Directory**. A configuração em `apps/api/vercel.json` publica a
+entrada serverless da API, e o script `vercel-build` gera o Prisma Client
+antes de compilar o TypeScript. Configure no painel Vercel as variáveis
+`DATABASE_URL` (PostgreSQL acessível pela nuvem) e `CGU_API_KEY` (chave
+privada da CGU), pelo menos nos ambientes em que a API será executada. Não
+coloque esses valores no repositório, no app mobile ou em `vercel.json`.
+O `DATABASE_URL` também precisa estar disponível durante o build, pois a
+configuração do Prisma o valida ao gerar o client.
+
+Após o deploy, valide `https://<dominio-da-api>/api/health`. Para conectar
+o app publicado, configure `EXPO_PUBLIC_API_URL` no ambiente de build do
+mobile com a URL base da API Vercel; essa variável é pública e não deve
+conter segredos.
+
 ## Documentação por etapa
 
 - [Validação da API oficial — Etapa 2](./docs/02-VALIDACAO-API.md)
