@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "vercel-build": "prisma generate && tsc",
+    "build": "prisma generate && tsc",
+    "vercel-build": "npm run build",
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
     "db:format": "prisma format",

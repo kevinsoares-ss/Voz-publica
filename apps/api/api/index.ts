@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createApiHandler } from "./app.js";
+import { createApiHandler } from "../src/app.js";
 
 const handleApiRequest = createApiHandler();
 
