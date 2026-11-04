@@ -109,9 +109,10 @@ são carregados novamente pelas sincronizações acima.
 ## Publicação da API na Vercel
 
 Crie um projeto Vercel ligado ao repositório e defina `apps/api` como
-**Root Directory**. A configuração em `apps/api/vercel.json` publica a
-entrada serverless da API, e o script `vercel-build` gera o Prisma Client
-antes de compilar o TypeScript. Configure no painel Vercel as variáveis
+**Root Directory**. A função `apps/api/api/index.ts` publica a API, e o
+script `build` gera o Prisma Client antes de compilar o TypeScript. O
+`apps/api/vercel.json` encaminha as rotas para essa função. Configure no
+painel Vercel as variáveis
 `DATABASE_URL` (PostgreSQL acessível pela nuvem) e `CGU_API_KEY` (chave
 privada da CGU), pelo menos nos ambientes em que a API será executada. Não
 coloque esses valores no repositório, no app mobile ou em `vercel.json`.
