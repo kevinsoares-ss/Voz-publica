@@ -108,11 +108,11 @@ são carregados novamente pelas sincronizações acima.
 
 ## Publicação da API na Vercel
 
-Crie um projeto Vercel ligado ao repositório e defina `apps/api` como
-**Root Directory**. A função `apps/api/api/index.ts` publica a API, e o
-script `build` gera o Prisma Client antes de compilar o TypeScript. O
-`apps/api/vercel.json` encaminha as rotas para essa função. Configure no
-painel Vercel as variáveis
+Crie um projeto Vercel ligado ao repositório e deixe o **Root Directory**
+na raiz do repositório. O `vercel.json` da raiz declara o serviço `api`,
+cuja raiz é `apps/api`, e encaminha as rotas `/api/*` para
+`apps/api/api/index.ts`. O serviço usa o script `build` para gerar o Prisma
+Client e compilar o TypeScript. Configure no painel Vercel as variáveis
 `DATABASE_URL` (PostgreSQL acessível pela nuvem) e `CGU_API_KEY` (chave
 privada da CGU), pelo menos nos ambientes em que a API será executada. Não
 coloque esses valores no repositório, no app mobile ou em `vercel.json`.
@@ -122,7 +122,9 @@ configuração do Prisma o valida ao gerar o client.
 Após o deploy, valide `https://<dominio-da-api>/api/health`. Para conectar
 o app publicado, configure `EXPO_PUBLIC_API_URL` no ambiente de build do
 mobile com a URL base da API Vercel; essa variável é pública e não deve
-conter segredos.
+conter segredos. O app mobile não é implantado como um serviço Vercel por
+essa configuração; a API acessa o banco Neon diretamente por
+`DATABASE_URL`, sem bindings entre serviços.
 
 ## Documentação por etapa
 
