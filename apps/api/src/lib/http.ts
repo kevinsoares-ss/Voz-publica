@@ -1,4 +1,18 @@
-import type { ServerResponse } from "node:http";
+export interface ApiRequest {
+  method?: string;
+  url?: string;
+  headers: {
+    origin?: string;
+  };
+}
+
+export interface ApiResponse {
+  headersSent: boolean;
+  setHeader(name: string, value: string): void;
+  writeHead(statusCode: number, headers?: Record<string, string>): void;
+  end(body?: string): void;
+  destroy(error?: Error): void;
+}
 
 export interface ApiError {
   error: {
@@ -9,7 +23,7 @@ export interface ApiError {
 }
 
 export function sendJson(
-  response: ServerResponse,
+  response: ApiResponse,
   statusCode: number,
   payload: unknown,
 ): void {
@@ -22,7 +36,7 @@ export function sendJson(
 }
 
 export function sendError(
-  response: ServerResponse,
+  response: ApiResponse,
   statusCode: number,
   code: string,
   message: string,

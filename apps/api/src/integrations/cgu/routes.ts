@@ -1,4 +1,4 @@
-import type { ServerResponse } from "node:http";
+import type { ApiResponse } from "../../lib/http.js";
 import { z } from "zod";
 import { sendError, sendJson } from "../../lib/http.js";
 import { CguApiError, CguClient } from "./client.js";
@@ -21,7 +21,7 @@ const agencyQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),
 });
 
-function sendCguError(response: ServerResponse, error: unknown): boolean {
+function sendCguError(response: ApiResponse, error: unknown): boolean {
   if (!(error instanceof CguApiError)) return false;
   const statusCode =
     error.code === "CGU_API_KEY_MISSING"
@@ -37,7 +37,7 @@ function sendCguError(response: ServerResponse, error: unknown): boolean {
 
 export async function listCguExpenses(
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
   client = new CguClient(),
 ): Promise<void> {
   const parsed = querySchema.safeParse({
@@ -83,7 +83,7 @@ export async function listCguExpenses(
 
 export async function listCguAgencies(
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
   client = new CguClient(),
 ): Promise<void> {
   const parsed = agencyQuerySchema.safeParse({

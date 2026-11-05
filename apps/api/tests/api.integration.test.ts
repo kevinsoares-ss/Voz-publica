@@ -5,15 +5,19 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 import { createApiServer } from "../src/app.js";
 import { prisma } from "../src/database.js";
+import { senadoCeapsSourceId } from "../src/integrations/senado/expenses.js";
 
 test("representative API validates requests and returns provenance-backed records", async () => {
   const suffix = randomUUID();
   const sourceId = randomUUID();
   const externalId = `test-${suffix}`;
   const senatorExternalId = `senado-${suffix}`;
+  const senatorExpenseExternalId = String(Date.now());
   const name = `API test fixture ${suffix}`;
   const city = `Test city ${suffix}`;
   const server = createApiServer();
+  const senateExpenseSourceId = senadoCeapsSourceId(2200);
+  const expenseExternalId = `ceaps-${suffix}`;
 
   await prisma.source.create({
     data: {
@@ -38,6 +42,52 @@ test("representative API validates requests and returns provenance-backed record
         lastSyncedAt: new Date(),
         sourceId,
       },
+    });
+    const senateExpenseRepresentative = await prisma.representative.create({
+      data: {
+        sourceNamespace: "senado",
+        externalId: senatorExpenseExternalId,
+        name: `Senate expense fixture ${suffix}`,
+        role: "SENATOR",
+        sphere: "FEDERAL",
+        powerBranch: "LEGISLATIVE",
+        lastSyncedAt: new Date(),
+        sourceId,
+      },
+    });
+    await prisma.source.create({
+      data: {
+        id: senateExpenseSourceId,
+        type: "SENADO_API",
+        name: "Senate CEAPS API test fixture",
+        url: "https://example.invalid/ceaps/2200",
+      },
+    });
+    await prisma.expense.createMany({
+      data: [
+        {
+          externalId: expenseExternalId,
+          representativeId: senateExpenseRepresentative.id,
+          year: 2200,
+          month: 1,
+          category: "Despesa de teste",
+          supplier: "Fornecedor de teste",
+          value: "12.34",
+          sourceId: senateExpenseSourceId,
+          lastSyncedAt: new Date(),
+        },
+        {
+          externalId: `${expenseExternalId}-2`,
+          representativeId: senateExpenseRepresentative.id,
+          year: 2200,
+          month: 1,
+          category: "Outra despesa de teste",
+          supplier: "Outro fornecedor de teste",
+          value: "56.78",
+          sourceId: senateExpenseSourceId,
+          lastSyncedAt: new Date(),
+        },
+      ],
     });
     server.listen(0, "127.0.0.1");
     await once(server, "listening");
@@ -131,6 +181,17 @@ test("representative API validates requests and returns provenance-backed record
       "SENATOR",
     );
 
+    const senateExpensesResponse = await fetch(
+      `${baseUrl}/api/representatives/${encodeURIComponent(`senado:${senatorExpenseExternalId}`)}/expenses?year=2200&limit=1`,
+    );
+    assert.equal(senateExpensesResponse.status, 200);
+    const senateExpensesBody = await senateExpensesResponse.json();
+    assert.equal(senateExpensesBody.data.length, 1);
+    assert.equal(senateExpensesBody.data[0].ano, 2200);
+    assert.equal(senateExpensesBody.data[0].valorReembolsado, "12.34");
+    assert.equal(senateExpensesBody.source.url, "https://example.invalid/ceaps/2200");
+    assert.equal(new URL(senateExpensesBody.pagination.nextUrl).searchParams.get("page"), "2");
+
     const invalidQueryResponse = await fetch(
       `${baseUrl}/api/representatives?limit=101`,
     );
@@ -162,6 +223,14 @@ test("representative API validates requests and returns provenance-backed record
       (await invalidProposalQuery.json()).error.code,
       "VALIDATION_ERROR",
     );
+    const invalidProposalNumber = await fetch(
+      `${baseUrl}/api/proposals?number=0`,
+    );
+    assert.equal(invalidProposalNumber.status, 400);
+    const invalidProposalAuthor = await fetch(
+      `${baseUrl}/api/proposals?authorId=not-numeric`,
+    );
+    assert.equal(invalidProposalAuthor.status, 400);
 
     const invalidExpenseId = await fetch(
       `${baseUrl}/api/representatives/not-numeric/expenses?year=2025`,
@@ -173,9 +242,18 @@ test("representative API validates requests and returns provenance-backed record
     );
     assert.equal(invalidIndividualVoteId.status, 400);
   } finally {
+    await prisma.expense.deleteMany({
+      where: { sourceId: senateExpenseSourceId },
+    });
+    await prisma.source.deleteMany({
+      where: { id: senateExpenseSourceId },
+    });
     await prisma.representative.deleteMany({ where: { externalId } });
     await prisma.representative.deleteMany({
       where: { sourceNamespace: "senado", externalId: senatorExternalId },
+    });
+    await prisma.representative.deleteMany({
+      where: { sourceNamespace: "senado", externalId: senatorExpenseExternalId },
     });
     await prisma.source.deleteMany({ where: { id: sourceId } });
     if (server.listening) {

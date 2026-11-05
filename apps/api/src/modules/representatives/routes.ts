@@ -1,4 +1,4 @@
-import type { ServerResponse } from "node:http";
+import type { ApiResponse } from "../../lib/http.js";
 import { z } from "zod";
 import { prisma } from "../../database.js";
 import { sendError, sendJson } from "../../lib/http.js";
@@ -44,7 +44,7 @@ function representativeDto(
 
 export async function listRepresentatives(
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsed = listQuerySchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
@@ -109,7 +109,7 @@ export async function listRepresentatives(
 
 export async function getRepresentative(
   externalId: string,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsedId = externalIdSchema.safeParse(externalId);
   if (!parsedId.success) {

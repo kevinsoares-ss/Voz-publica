@@ -34,6 +34,13 @@ export function Screen({ children, scroll = true, contentContainerStyle }: Props
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.paper },
-  content: { padding: 20, gap: 16 },
+  content: {
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+    padding: 20,
+    paddingBottom: 28,
+    gap: 16,
+  },
   fill: { flex: 1 },
 });

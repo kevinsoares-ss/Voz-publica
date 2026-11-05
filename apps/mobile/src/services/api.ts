@@ -144,13 +144,28 @@ export type ApiPage<T> = {
 };
 
 function resolveApiBaseUrl(): string {
-  const configuredUrl =
-    process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") ??
-    "http://127.0.0.1:3000";
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "");
+  const localApiUrl = "http://127.0.0.1:3000";
 
-  if (Platform.OS === "web") return configuredUrl;
+  if (Platform.OS === "web") {
+    if (
+      typeof window !== "undefined" &&
+      !["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ) {
+      if (
+        !configuredUrl ||
+        ["localhost", "127.0.0.1", "0.0.0.0"].includes(
+          new URL(configuredUrl).hostname,
+        )
+      ) {
+        return window.location.origin;
+      }
+      return configuredUrl;
+    }
+    return configuredUrl ?? localApiUrl;
+  }
 
-  const apiUrl = new URL(configuredUrl);
+  const apiUrl = new URL(configuredUrl ?? localApiUrl);
   if (
     apiUrl.hostname === "localhost" ||
     apiUrl.hostname === "127.0.0.1" ||
@@ -220,8 +235,15 @@ export function getRepresentative(id: string): Promise<{ data: Representative }>
   return request(`/api/politicians/${encodeURIComponent(id)}`);
 }
 
-export function getCommitments(page = 1): Promise<ApiPage<CommitmentRecord>> {
-  return request(`/api/commitments?page=${page}&limit=20`);
+export function getCommitments(
+  page = 1,
+  representativeId?: string,
+): Promise<ApiPage<CommitmentRecord>> {
+  const query = new URLSearchParams({ page: String(page), limit: "20" });
+  const path = representativeId
+    ? `/api/politicians/${encodeURIComponent(representativeId)}/commitments`
+    : "/api/commitments";
+  return request(`${path}?${query.toString()}`);
 }
 
 export function getGovernmentActions(
@@ -262,6 +284,8 @@ export function getProposals(options: {
   page: number;
   year: number;
   type: string;
+  number?: number;
+  authorId?: string;
   limit?: number;
 }): Promise<OfficialList> {
   const query = new URLSearchParams({
@@ -270,6 +294,10 @@ export function getProposals(options: {
     year: String(options.year),
     type: options.type,
   });
+  if (options.number !== undefined) {
+    query.set("number", String(options.number));
+  }
+  if (options.authorId) query.set("authorId", options.authorId);
   return request(`/api/proposals?${query.toString()}`);
 }
 
@@ -310,8 +338,12 @@ export async function checkApiHealth(): Promise<boolean> {
   return health.status === "ok";
 }
 
-export const officialExpensesUrl = (id: string, year: number) =>
-  `https://dadosabertos.camara.leg.br/api/v2/deputados/${encodeURIComponent(id)}/despesas?ano=${encodeURIComponent(String(year))}&itens=20`;
+export const officialExpensesUrl = (id: string, year: number) => {
+  if (id.startsWith("senado:")) {
+    return `https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/${encodeURIComponent(String(year))}`;
+  }
+  return `https://dadosabertos.camara.leg.br/api/v2/deputados/${encodeURIComponent(id)}/despesas?ano=${encodeURIComponent(String(year))}&itens=20`;
+};
 
 export const officialProposalUrl = (id: string) =>
   `https://dadosabertos.camara.leg.br/api/v2/proposicoes/${encodeURIComponent(id)}`;

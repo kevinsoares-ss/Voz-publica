@@ -1,37 +1,32 @@
-import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { z } from "zod";
 
 const SENATE_LIST_URL =
-  "https://legis.senado.leg.br/dadosabertos/senador/lista/atual";
+  "https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores";
+
+const officialIdSchema = z
+  .union([z.string().regex(/^\d+$/), z.number().int().positive()])
+  .transform(String);
 
 const senatorSchema = z.object({
-  IdentificacaoParlamentar: z.object({
-    CodigoParlamentar: z.string().regex(/^\d+$/),
-    NomeParlamentar: z.string().min(1),
-    NomeCompletoParlamentar: z.string().optional(),
-    SiglaPartidoParlamentar: z.string().optional(),
-    UfParlamentar: z.string().length(2).optional(),
-    UrlFotoParlamentar: z.string().url().optional(),
-    UrlPaginaParlamentar: z.string().url().optional(),
-  }).passthrough(),
+  codigoParlamentar: officialIdSchema,
+  nomeParlamentar: z.string().trim().min(1),
+  partido: z.string().trim().nullable().optional(),
+  uf: z.string().trim().length(2).nullable().optional(),
 }).passthrough();
 
 const responseSchema = z.object({
-  ListaParlamentarEmExercicio: z.object({
-    Parlamentares: z.object({
-      Parlamentar: z.array(senatorSchema).min(1),
-    }),
-  }),
+  statusCode: z.literal(200),
+  data: z.array(senatorSchema).min(1),
 });
 
 export type SenadoSenator = {
   id: string;
   name: string;
-  civilName: string | null;
+  civilName: null;
   party: string | null;
   state: string | null;
-  photoUrl: string | null;
-  sourceUrl: string | null;
+  photoUrl: null;
+  sourceUrl: null;
 };
 
 export type SenadoListResult = {
@@ -55,12 +50,47 @@ export class SenadoApiError extends Error {
   }
 }
 
-const xmlParser = new XMLParser({
-  ignoreAttributes: true,
-  parseTagValue: false,
-  trimValues: true,
-  isArray: (tagName) => tagName === "Parlamentar",
-});
+async function requestJson(
+  url: URL,
+  timeoutMs: number,
+  fetchImplementation: typeof fetch,
+): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetchImplementation(url, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new SenadoApiError(
+        "The Senado API request timed out.",
+        "SENADO_TIMEOUT",
+      );
+    }
+    throw new SenadoApiError(
+      "The Senado API could not be reached.",
+      "SENADO_NETWORK_ERROR",
+    );
+  }
+
+  if (!response.ok) {
+    throw new SenadoApiError(
+      `The Senado API returned HTTP ${response.status}.`,
+      "SENADO_HTTP_ERROR",
+      response.status,
+    );
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    throw new SenadoApiError(
+      "The Senado API response was not valid JSON.",
+      "SENADO_INVALID_RESPONSE",
+    );
+  }
+}
 
 export class SenadoClient {
   private readonly url: URL;
@@ -78,50 +108,12 @@ export class SenadoClient {
   }
 
   async listCurrentSenators(): Promise<SenadoListResult> {
-    let response: Response;
-    try {
-      response = await this.fetchImplementation(this.url, {
-        headers: { accept: "application/xml, text/xml" },
-        signal: AbortSignal.timeout(this.timeoutMs),
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === "TimeoutError") {
-        throw new SenadoApiError(
-          "The Senado API request timed out.",
-          "SENADO_TIMEOUT",
-        );
-      }
-      throw new SenadoApiError(
-        "The Senado API could not be reached.",
-        "SENADO_NETWORK_ERROR",
-      );
-    }
-
-    if (!response.ok) {
-      throw new SenadoApiError(
-        `The Senado API returned HTTP ${response.status}.`,
-        "SENADO_HTTP_ERROR",
-        response.status,
-      );
-    }
-
-    let xml: string;
-    try {
-      xml = await response.text();
-    } catch {
-      throw new SenadoApiError(
-        "The Senado API response could not be read.",
-        "SENADO_INVALID_RESPONSE",
-      );
-    }
-    if (XMLValidator.validate(xml) !== true) {
-      throw new SenadoApiError(
-        "The Senado API response was not valid XML.",
-        "SENADO_INVALID_RESPONSE",
-      );
-    }
-
-    const parsed = responseSchema.safeParse(xmlParser.parse(xml));
+    const body = await requestJson(
+      this.url,
+      this.timeoutMs,
+      this.fetchImplementation,
+    );
+    const parsed = responseSchema.safeParse(body);
     if (!parsed.success) {
       throw new SenadoApiError(
         "The Senado API response did not match the expected senator-list format.",
@@ -129,19 +121,16 @@ export class SenadoClient {
       );
     }
 
-    const senators = parsed.data.ListaParlamentarEmExercicio.Parlamentares
-      .Parlamentar.map(({ IdentificacaoParlamentar: item }) => ({
-        id: item.CodigoParlamentar,
-        name: item.NomeParlamentar,
-        civilName: item.NomeCompletoParlamentar ?? null,
-        party: item.SiglaPartidoParlamentar ?? null,
-        state: item.UfParlamentar ?? null,
-        photoUrl: item.UrlFotoParlamentar ?? null,
-        sourceUrl: item.UrlPaginaParlamentar ?? null,
-      }));
-
     return {
-      senators,
+      senators: parsed.data.data.map((item) => ({
+        id: item.codigoParlamentar,
+        name: item.nomeParlamentar,
+        civilName: null,
+        party: item.partido ?? null,
+        state: item.uf ?? null,
+        photoUrl: null,
+        sourceUrl: null,
+      })),
       requestedUrl: this.url.toString(),
       consultedAt: new Date(),
     };

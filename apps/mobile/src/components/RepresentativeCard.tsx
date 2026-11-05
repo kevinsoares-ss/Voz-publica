@@ -89,7 +89,12 @@ const styles = StyleSheet.create({
   name: { color: colors.ink, fontSize: 15, fontWeight: "700" },
   meta: { color: colors.muted, fontSize: 13 },
   source: { color: colors.green, fontSize: 11, fontWeight: "600" },
-  favorite: { padding: 8 },
+  favorite: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   favoriteIcon: { color: colors.muted, fontSize: 24 },
   favoriteActive: { color: colors.red },
 });

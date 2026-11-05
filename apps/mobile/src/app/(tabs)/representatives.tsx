@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { EmptyState, ErrorState, LoadingState } from "../../components/Feedback";
 import { RepresentativeCard } from "../../components/RepresentativeCard";
@@ -25,11 +25,16 @@ const ROLE_FILTERS: Array<{
 
 export default function RepresentativesScreen() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const params = useLocalSearchParams<{ search?: string; role?: string }>();
+  const initialSearch = Array.isArray(params.search) ? params.search[0] : params.search;
+  const initialRole = Array.isArray(params.role) ? params.role[0] : params.role;
+  const validInitialRole =
+    ROLE_FILTERS.find((option) => option.value === initialRole)?.value ?? "";
+  const [query, setQuery] = useState(initialSearch ?? "");
   const [party, setParty] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
-  const [role, setRole] = useState<Representative["role"] | "">("");
+  const [role, setRole] = useState<Representative["role"] | "">(validInitialRole);
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -76,6 +81,11 @@ export default function RepresentativesScreen() {
     return () => clearTimeout(timer);
   }, [loadPage, refresh]);
 
+  useEffect(() => {
+    setQuery(initialSearch ?? "");
+    setRole(validInitialRole);
+  }, [initialSearch, validInitialRole]);
+
   useFocusEffect(
     useCallback(() => {
       void getFavoriteIds().then(setFavoriteIds).catch((caught: unknown) => {
@@ -96,7 +106,10 @@ export default function RepresentativesScreen() {
     <Screen>
       <Text style={styles.kicker}>TRANSPARÊNCIA POLÍTICA</Text>
       <Text style={styles.title}>Agentes públicos</Text>
-      <Text style={styles.subtitle}>Consulte registros oficiais disponíveis de diferentes cargos e esferas.</Text>
+      <Text style={styles.subtitle}>
+        Encontre representantes por nome, cargo e localidade nas fontes oficiais.
+      </Text>
+      <Text style={styles.fieldLabel}>Buscar por nome</Text>
       <TextInput
         accessibilityLabel="Buscar por nome do agente público"
         placeholder="Buscar por nome"
@@ -126,6 +139,7 @@ export default function RepresentativesScreen() {
           </Pressable>
         ))}
       </ScrollView>
+      <Text style={styles.fieldLabel}>Outros filtros</Text>
       <View style={styles.filters}>
         <TextInput
           accessibilityLabel="Filtrar por partido"
@@ -147,6 +161,36 @@ export default function RepresentativesScreen() {
           style={[styles.search, styles.ufInput]}
         />
       </View>
+      {query || party || state || city || role ? (
+        <View style={styles.activeFilters}>
+          <Text style={styles.activeLabel}>Filtros ativos</Text>
+          <View style={styles.activeChip}>
+            <Text style={styles.activeChipText}>
+              {[role && ROLE_FILTERS.find((option) => option.value === role)?.label,
+                query && `Nome: ${query}`,
+                party && `Partido: ${party}`,
+                state && `UF: ${state}`,
+                city && `Município: ${city}`]
+                .filter(Boolean)
+                .join(" · ")}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Limpar todos os filtros"
+              onPress={() => {
+                setQuery("");
+                setParty("");
+                setState("");
+                setCity("");
+                setRole("");
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.activeClear}>×</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
       <View style={styles.filters}>
         <TextInput
           accessibilityLabel="Filtrar por município"
@@ -228,7 +272,8 @@ export default function RepresentativesScreen() {
 const styles = StyleSheet.create({
   kicker: { color: colors.green, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", marginTop: -8 },
-  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20, marginTop: -9 },
+  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -9 },
+  fieldLabel: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: -9 },
   search: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 13, paddingVertical: 12, paddingHorizontal: 14, color: colors.ink, fontSize: 14 },
   filters: { flexDirection: "row", gap: 8, alignItems: "center" },
   roleFilters: { flexDirection: "row", gap: 8, paddingVertical: 2 },
@@ -240,6 +285,20 @@ const styles = StyleSheet.create({
   ufInput: { width: 62, textAlign: "center" },
   clearButton: { padding: 7 },
   clearText: { color: colors.green, fontWeight: "700", fontSize: 12 },
+  activeFilters: { gap: 6 },
+  activeLabel: { color: colors.muted, fontSize: 11, fontWeight: "700" },
+  activeChip: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 11,
+    borderRadius: 12,
+  },
+  activeChipText: { flex: 1, color: colors.primary, fontSize: 11, fontWeight: "700" },
+  activeClear: { color: colors.primary, fontSize: 21, fontWeight: "700", paddingHorizontal: 5 },
   resultRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   resultCount: { color: colors.muted, fontSize: 12 },
   refresh: { color: colors.forest, fontSize: 12, fontWeight: "700" },

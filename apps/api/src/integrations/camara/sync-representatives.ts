@@ -109,7 +109,7 @@ async function saveDeputyPage(page: DeputyPage): Promise<void> {
         },
       });
     }
-  });
+  }, { timeout: 30_000 });
 }
 
 async function main(): Promise<void> {

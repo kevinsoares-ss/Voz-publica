@@ -1,4 +1,4 @@
-import type { ServerResponse } from "node:http";
+import type { ApiResponse } from "../../lib/http.js";
 import { z } from "zod";
 import { prisma } from "../../database.js";
 import { sendError, sendJson } from "../../lib/http.js";
@@ -46,7 +46,7 @@ function publicId(sourceNamespace: string, externalId: string): string {
 
 export async function listPoliticians(
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsed = listQuerySchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
@@ -126,7 +126,7 @@ export async function listPoliticians(
 
 export async function getPolitician(
   id: string,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsedId = parsePoliticianId(id);
   if (!parsedId) {

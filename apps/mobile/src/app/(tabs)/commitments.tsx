@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   EmptyState,
@@ -15,6 +16,10 @@ import {
 import { colors } from "../../theme/colors";
 
 export default function CommitmentsScreen() {
+  const params = useLocalSearchParams<{ representativeId?: string }>();
+  const representativeId = Array.isArray(params.representativeId)
+    ? params.representativeId[0]
+    : params.representativeId;
   const [records, setRecords] = useState<CommitmentRecord[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -27,7 +32,10 @@ export default function CommitmentsScreen() {
     else setLoading(true);
     setError("");
     try {
-      const result: ApiPage<CommitmentRecord> = await getCommitments(requestedPage);
+      const result: ApiPage<CommitmentRecord> = await getCommitments(
+        requestedPage,
+        representativeId,
+      );
       setRecords((current) =>
         append ? [...current, ...result.data] : result.data,
       );
@@ -43,7 +51,7 @@ export default function CommitmentsScreen() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [representativeId]);
 
   useEffect(() => {
     void loadPage(1, false);
@@ -52,7 +60,9 @@ export default function CommitmentsScreen() {
   return (
     <Screen>
       <Text style={styles.kicker}>ACOMPANHAMENTO DOCUMENTAL</Text>
-      <Text style={styles.title}>Compromissos</Text>
+      <Text style={styles.title}>
+        {representativeId ? "Compromissos do agente" : "Compromissos"}
+      </Text>
       <Text style={styles.subtitle}>
         Registros com critérios explícitos, fonte identificada e evidências rastreáveis.
       </Text>
@@ -103,6 +113,8 @@ export default function CommitmentsScreen() {
 }
 
 function CommitmentCard({ record }: { record: CommitmentRecord }) {
+  const [showEvidence, setShowEvidence] = useState(false);
+
   async function openSource() {
     try {
       await Linking.openURL(record.source.url);
@@ -134,6 +146,34 @@ function CommitmentCard({ record }: { record: CommitmentRecord }) {
       <Text style={styles.meta}>
         Evidências vinculadas: {record.evidenceCount}
       </Text>
+      {record.evidences.length > 0 ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showEvidence }}
+            onPress={() => setShowEvidence((current) => !current)}
+            style={styles.evidenceToggle}
+          >
+            <Text style={styles.sourceButtonText}>
+              {showEvidence ? "Ocultar evidências" : "Ver evidências e histórico"}
+            </Text>
+          </Pressable>
+          {showEvidence ? (
+            <View style={styles.evidenceList}>
+              {record.evidences.map((evidence) => (
+                <View key={evidence.id} style={styles.evidence}>
+                  <Text style={styles.body}>{evidence.description}</Text>
+                  {evidence.factAt ? (
+                    <Text style={styles.meta}>
+                      Data do fato: {formatDate(evidence.factAt)}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </>
+      ) : null}
       <Text style={styles.meta}>Método: {record.evaluationMethod}</Text>
       {latestReview ? (
         <View style={styles.review}>
@@ -222,6 +262,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sourceButtonText: { color: colors.forest, fontSize: 12, fontWeight: "800" },
+  evidenceToggle: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    backgroundColor: colors.mint,
+    borderRadius: 11,
+  },
+  evidenceList: { gap: 8, paddingTop: 2 },
+  evidence: {
+    borderLeftColor: colors.green,
+    borderLeftWidth: 3,
+    paddingLeft: 10,
+    gap: 4,
+  },
   moreButton: {
     backgroundColor: colors.forest,
     borderRadius: 12,

@@ -70,6 +70,8 @@ export default function FavoritesScreen() {
         <EmptyState
           title="Ainda sem favoritos"
           body="Toque no coração ao lado de um perfil para salvá-lo neste aparelho."
+          actionLabel="Explorar agentes"
+          onAction={() => router.push("/(tabs)/representatives" as Href)}
         />
       ) : null}
       {missingCount > 0 ? (

@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   EmptyState,
@@ -18,18 +19,43 @@ import { colors } from "../../theme/colors";
 type Result = Awaited<ReturnType<typeof getCguAnnualExpenses>>;
 
 export default function CguExpensesScreen() {
+  const params = useLocalSearchParams<{
+    agencyCode?: string;
+    agencyName?: string;
+  }>();
+  const agencyCode = Array.isArray(params.agencyCode)
+    ? params.agencyCode[0]
+    : params.agencyCode;
+  const agencyName = Array.isArray(params.agencyName)
+    ? params.agencyName[0]
+    : params.agencyName;
   const [yearText, setYearText] = useState(String(new Date().getFullYear()));
   const [year, setYear] = useState(new Date().getFullYear());
   const [page, setPage] = useState(1);
-  const [agencySearch, setAgencySearch] = useState("");
+  const [agencySearch, setAgencySearch] = useState(agencyName ?? "");
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
-  const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(null);
+  const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(
+    agencyCode
+      ? { codigo: agencyCode, descricao: agencyName ?? null }
+      : null,
+  );
   const [searchingAgencies, setSearchingAgencies] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [expandedExpense, setExpandedExpense] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!agencyCode) return;
+    setAgencySearch(agencyName ?? "");
+    setSelectedAgency({ codigo: agencyCode, descricao: agencyName ?? null });
+    setAgencies([]);
+    setResult(null);
+    setError("");
+    setHasMore(true);
+  }, [agencyCode, agencyName]);
 
   const load = useCallback(async (nextYear: number, nextPage = 1) => {
     if (
@@ -209,6 +235,10 @@ export default function CguExpensesScreen() {
             <ExpenseCard
               key={`${expense.codigoOrgao ?? "orgao"}-${index}`}
               expense={expense}
+              expanded={expandedExpense === index}
+              onToggle={() =>
+                setExpandedExpense((current) => current === index ? null : index)
+              }
             />
           ))}
           {result.data.length > 0 && hasMore ? (
@@ -244,7 +274,15 @@ export default function CguExpensesScreen() {
   );
 }
 
-function ExpenseCard({ expense }: { expense: CguAnnualExpense }) {
+function ExpenseCard({
+  expense,
+  expanded,
+  onToggle,
+}: {
+  expense: CguAnnualExpense;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   return (
     <View style={styles.card}>
       <Text style={styles.agencyName}>
@@ -261,6 +299,32 @@ function ExpenseCard({ expense }: { expense: CguAnnualExpense }) {
         <ValueRow label="Liquidado" value={expense.liquidado} />
         <ValueRow label="Pago" value={expense.pago} />
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        onPress={onToggle}
+        style={styles.detailToggle}
+      >
+        <Text style={styles.detailToggleText}>
+          {expanded ? "Ocultar detalhes" : "Ver detalhes do registro"}
+        </Text>
+      </Pressable>
+      {expanded ? (
+        <View style={styles.detailList}>
+          <Text style={styles.detailTitle}>Dados retornados pela CGU</Text>
+          {Object.entries(expense)
+            .filter(([key]) =>
+              !["ano", "orgao", "codigoOrgao", "orgaoSuperior", "codigoOrgaoSuperior",
+                "empenhado", "liquidado", "pago"].includes(key),
+            )
+            .map(([key, value]) => (
+              <ValueRow key={key} label={key} value={formatDetailValue(value)} />
+            ))}
+          <Text style={styles.meta}>
+            Período: {expense.ano ?? "Não informado pela fonte"}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -284,6 +348,13 @@ function formatDate(value: string): string {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(date);
+}
+
+function formatDetailValue(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (value === null || value === undefined) return "Não informado pela fonte";
+  const serialized = JSON.stringify(value) ?? String(value);
+  return serialized.length > 240 ? `${serialized.slice(0, 237)}...` : serialized;
 }
 
 const styles = StyleSheet.create({
@@ -327,6 +398,10 @@ const styles = StyleSheet.create({
   agencyOptionName: { color: colors.ink, fontSize: 13, fontWeight: "700" },
   meta: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   values: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, marginTop: 4, paddingTop: 7 },
+  detailToggle: { minHeight: 44, justifyContent: "center" },
+  detailToggleText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
+  detailList: { gap: 7, borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10 },
+  detailTitle: { color: colors.ink, fontSize: 12, fontWeight: "800" },
   valueRow: { flexDirection: "row", justifyContent: "space-between", gap: 8, paddingVertical: 4 },
   amount: { color: colors.ink, fontSize: 12, fontWeight: "700", flexShrink: 1 },
   moreButton: {

@@ -1,6 +1,16 @@
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import * as ExpoLinking from "expo-linking";
+import {
+  Image,
+  Linking,
+  Platform,
+  Pressable,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   EmptyState,
   ErrorState,
@@ -95,6 +105,26 @@ export default function RepresentativeProfileScreen() {
     }
   }
 
+  async function shareProfile() {
+    if (!representative) return;
+    try {
+      const profileUrl = Platform.OS === "web" && typeof window !== "undefined"
+        ? new URL(
+            `/representatives/${encodeURIComponent(representative.id)}`,
+            window.location.origin,
+          ).toString()
+        : ExpoLinking.createURL(
+            `/representatives/${encodeURIComponent(representative.id)}`,
+          );
+      await Share.share({
+        title: `Voz Pública · ${representative.name}`,
+        message: `${representative.name} — perfil público no Voz Pública: ${profileUrl}`,
+      });
+    } catch {
+      setError("Não foi possível compartilhar este perfil.");
+    }
+  }
+
   return (
     <Screen>
       {loading ? <LoadingState label="Carregando perfil..." /> : null}
@@ -132,6 +162,13 @@ export default function RepresentativeProfileScreen() {
                 {favorite ? "♥  Salvo nos favoritos" : "♡  Adicionar aos favoritos"}
               </Text>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void shareProfile()}
+              style={styles.favoriteButton}
+            >
+              <Text style={styles.favoriteText}>Compartilhar perfil ↗</Text>
+            </Pressable>
           </View>
 
           <View style={styles.section}>
@@ -157,36 +194,63 @@ export default function RepresentativeProfileScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Atuação e despesas</Text>
-            {representative.sourceNamespace === "camara" ? (
+            {representative.sourceNamespace === "camara" ||
+            representative.sourceNamespace === "senado" ? (
               <>
                 <Text style={styles.body}>
-                  Consulte recursos disponíveis na Câmara. Respostas vazias são
-                  apresentadas como resultado dos filtros consultados, sem
-                  presumir valores ou registros.
+                  {representative.sourceNamespace === "senado"
+                    ? "Consulte despesas CEAPS sincronizadas da fonte oficial do Senado. Respostas vazias descrevem somente o período consultado."
+                    : "Consulte recursos disponíveis na Câmara. Respostas vazias são apresentadas como resultado dos filtros consultados, sem presumir valores ou registros."}
                 </Text>
-                <Pressable
-                  onPress={() => router.push("/proposals" as Href)}
-                  style={styles.sourceButton}
-                >
-                  <Text style={styles.sourceButtonText}>Pesquisar proposições da Câmara →</Text>
-                </Pressable>
+                {representative.sourceNamespace === "camara" ? (
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/proposals",
+                        params: { authorId: representative.externalId },
+                      } as Href)
+                    }
+                    style={styles.sourceButton}
+                  >
+                    <Text style={styles.sourceButtonText}>Ver proposições deste deputado →</Text>
+                  </Pressable>
+                ) : null}
+                {representative.sourceNamespace === "camara" ? (
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(tabs)/commitments",
+                        params: { representativeId: representative.externalId },
+                      } as Href)
+                    }
+                    style={styles.sourceButton}
+                  >
+                    <Text style={styles.sourceButtonText}>Ver compromissos documentados →</Text>
+                  </Pressable>
+                ) : null}
                 <Pressable
                   onPress={() =>
                     router.push({
                       pathname: "/representatives/[id]/expenses",
-                      params: { id: representative.externalId },
+                      params: {
+                        id: representative.sourceNamespace === "senado"
+                          ? `senado:${representative.externalId}`
+                          : representative.externalId,
+                      },
                     } as Href)
                   }
                   style={styles.sourceButton}
                 >
-                  <Text style={styles.sourceButtonText}>Consultar despesas na Câmara →</Text>
+                  <Text style={styles.sourceButtonText}>
+                    Consultar despesas no {representative.sourceNamespace === "senado" ? "Senado" : "Câmara"} →
+                  </Text>
                 </Pressable>
               </>
             ) : (
               <Text style={styles.body}>
-                O perfil e a fonte oficial foram integrados. Consultas de
-                proposições, votações e despesas específicas deste órgão ainda
-                não estão disponíveis no app.
+                As consultas legislativas disponíveis no app são da Câmara dos
+                Deputados. Para este perfil do Senado, consulte as despesas
+                CEAPS sincronizadas na fonte oficial.
               </Text>
             )}
             <Pressable onPress={() => void openOfficialSource()} style={styles.sourceButton}>

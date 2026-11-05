@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage } from "node:http";
 import { prisma } from "./database.js";
 import { sendError, sendJson } from "./lib/http.js";
 import {
@@ -22,6 +22,7 @@ import {
   listGovernmentActions,
 } from "./modules/records/routes.js";
 import { CguClient } from "./integrations/cgu/client.js";
+import type { ApiRequest, ApiResponse } from "./lib/http.js";
 import {
   listCguAgencies,
   listCguExpenses,
@@ -37,11 +38,12 @@ const allowedOrigins = new Set(
 );
 
 async function handleRequest(
-  request: IncomingMessage,
-  response: ServerResponse,
+  request: ApiRequest,
+  response: ApiResponse,
   cguClient: CguClient,
 ): Promise<void> {
-  const origin = request.headers.origin;
+  const originHeader = request.headers.origin;
+  const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
   if (origin && allowedOrigins.has(origin)) {
     response.setHeader("access-control-allow-origin", origin);
     response.setHeader("access-control-allow-methods", "GET, OPTIONS");
@@ -203,7 +205,10 @@ async function handleRequest(
 
 export function createApiHandler(options: { cguClient?: CguClient } = {}) {
   const cguClient = options.cguClient ?? new CguClient();
-  return (request: IncomingMessage, response: ServerResponse) => {
+  return (
+    request: ApiRequest,
+    response: ApiResponse,
+  ) => {
     void handleRequest(request, response, cguClient).catch((error: unknown) => {
       console.error("API request failed", {
         method: request.method,
@@ -217,6 +222,58 @@ export function createApiHandler(options: { cguClient?: CguClient } = {}) {
       }
     });
   };
+}
+
+export function createApiFetchHandler(options: { cguClient?: CguClient } = {}) {
+  const handleApiRequest = createApiHandler(options);
+
+  return async (request: Request): Promise<Response> =>
+    new Promise<Response>((resolve, reject) => {
+      const headers = new Headers();
+      let statusCode = 200;
+      let settled = false;
+
+      const response: ApiResponse = {
+        headersSent: false,
+        setHeader(name, value) {
+          headers.set(name, value);
+        },
+        writeHead(status, responseHeaders) {
+          statusCode = status;
+          for (const [name, value] of Object.entries(responseHeaders ?? {})) {
+            headers.set(name, value);
+          }
+        },
+        end(body) {
+          if (settled) return;
+          settled = true;
+          response.headersSent = true;
+          const responseBody =
+            statusCode === 204 || statusCode === 304 ? null : body ?? null;
+          resolve(
+            new Response(responseBody, {
+              status: statusCode,
+              headers,
+            }),
+          );
+        },
+        destroy(error) {
+          if (settled) return;
+          settled = true;
+          reject(error ?? new Error("API response was destroyed."));
+        },
+      };
+
+      const url = new URL(request.url);
+      handleApiRequest(
+        {
+          method: request.method,
+          url: `${url.pathname}${url.search}`,
+          headers: { origin: request.headers.get("origin") ?? undefined },
+        },
+        response,
+      );
+    });
 }
 
 export function createApiServer(options: { cguClient?: CguClient } = {}) {

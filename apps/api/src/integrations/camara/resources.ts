@@ -8,6 +8,8 @@ const querySchema = z.object({
   limit: z.number().int().min(1).max(100),
   year: z.number().int().min(1900).max(2200).optional(),
   type: z.string().regex(/^[A-Z]{1,10}$/).optional(),
+  number: z.number().int().min(1).max(1_000_000_000).optional(),
+  authorId: z.string().regex(/^\d{1,20}$/).optional(),
 });
 
 const recordSchema = z.record(z.string(), z.unknown());
@@ -95,6 +97,8 @@ function parseQuery(input: {
   limit: number;
   year?: number;
   type?: string;
+  number?: number;
+  authorId?: string;
 }) {
   const parsed = querySchema.safeParse(input);
   if (!parsed.success) {
@@ -111,6 +115,8 @@ export async function listOfficialProposals(input: {
   limit: number;
   year?: number;
   type?: string;
+  number?: number;
+  authorId?: string;
 }): Promise<OfficialListResult> {
   const query = parseQuery(input);
   const url = new URL("proposicoes", API_BASE_URL);
@@ -120,6 +126,10 @@ export async function listOfficialProposals(input: {
   url.searchParams.set("itens", String(query.limit));
   if (query.year !== undefined) url.searchParams.set("ano", String(query.year));
   if (query.type) url.searchParams.set("siglaTipo", query.type);
+  if (query.number !== undefined) {
+    url.searchParams.set("numero", String(query.number));
+  }
+  if (query.authorId) url.searchParams.set("idAutor", query.authorId);
 
   const parsed = listEnvelopeSchema.safeParse(await requestJson(url));
   if (!parsed.success) {

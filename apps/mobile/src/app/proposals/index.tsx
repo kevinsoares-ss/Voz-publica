@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { EmptyState, ErrorState, LoadingState } from "../../components/Feedback";
 import { Screen } from "../../components/Screen";
@@ -14,6 +14,10 @@ function field(record: OfficialRecord, key: string): string | null {
 
 export default function ProposalsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ authorId?: string }>();
+  const authorId = Array.isArray(params.authorId)
+    ? params.authorId[0]
+    : params.authorId;
   const [yearText, setYearText] = useState("2025");
   const [typeText, setTypeText] = useState("PL");
   const [year, setYear] = useState(2025);
@@ -48,6 +52,7 @@ export default function ProposalsScreen() {
         page: nextPage,
         year: parsedYear,
         type: parsedType,
+        authorId,
         limit: 20,
       });
       setRecords((current) => append ? [...current, ...result.data] : result.data);
@@ -67,18 +72,42 @@ export default function ProposalsScreen() {
   return (
     <Screen>
       <Text style={styles.kicker}>DADOS OFICIAIS</Text>
-      <Text style={styles.title}>Proposições</Text>
-      <Text style={styles.subtitle}>Pesquise proposições legislativas diretamente na API da Câmara.</Text>
+      <Text style={styles.title}>
+        {authorId ? "Proposições do deputado" : "Proposições"}
+      </Text>
+      <Text style={styles.subtitle}>
+        {authorId
+          ? `Proposições vinculadas ao ID ${authorId}, conforme a API da Câmara.`
+          : "Pesquise proposições legislativas diretamente na API da Câmara."}
+      </Text>
       <View style={styles.filters}>
         <View style={styles.field}>
           <Text style={styles.label}>Tipo</Text>
-          <TextInput value={typeText} onChangeText={setTypeText} autoCapitalize="characters" maxLength={10} style={styles.input} />
+          <TextInput
+            accessibilityLabel="Tipo de proposição"
+            value={typeText}
+            onChangeText={setTypeText}
+            autoCapitalize="characters"
+            maxLength={10}
+            style={styles.input}
+          />
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>Ano</Text>
-          <TextInput value={yearText} onChangeText={setYearText} keyboardType="number-pad" maxLength={4} style={styles.input} />
+          <TextInput
+            accessibilityLabel="Ano da proposição"
+            value={yearText}
+            onChangeText={setYearText}
+            keyboardType="number-pad"
+            maxLength={4}
+            style={styles.input}
+          />
         </View>
-        <Pressable onPress={() => void search()} style={styles.searchButton}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void search()}
+          style={styles.searchButton}
+        >
           <Text style={styles.searchButtonText}>Buscar</Text>
         </Pressable>
       </View>

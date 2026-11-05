@@ -1,4 +1,4 @@
-import type { ServerResponse } from "node:http";
+import type { ApiResponse } from "../../lib/http.js";
 import { z } from "zod";
 import { prisma } from "../../database.js";
 import { sendError, sendJson } from "../../lib/http.js";
@@ -31,7 +31,7 @@ function parsePageQuery(url: URL) {
 }
 
 function sendValidationError(
-  response: ServerResponse,
+  response: ApiResponse,
   issues: Array<{ path: PropertyKey[]; message: string }>,
 ) {
   sendError(
@@ -65,7 +65,7 @@ async function findPolitician(id: string) {
 
 export async function listCommitments(
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
   politicianPublicId?: string,
 ): Promise<void> {
   const parsed = parsePageQuery(url);
@@ -173,7 +173,7 @@ export async function listCommitments(
 export async function listGovernmentActions(
   politicianPublicId: string,
   url: URL,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsedId = publicPoliticianIdSchema.safeParse(politicianPublicId);
   if (!parsedId.success) {
@@ -243,7 +243,7 @@ export async function listGovernmentActions(
 
 export async function listCommitmentEvidences(
   commitmentId: string,
-  response: ServerResponse,
+  response: ApiResponse,
 ): Promise<void> {
   const parsedId = uuidSchema.safeParse(commitmentId);
   if (!parsedId.success) {

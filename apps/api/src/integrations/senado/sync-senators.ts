@@ -18,7 +18,7 @@ async function saveSenators(result: SenadoListResult): Promise<void> {
     const source = await transaction.source.create({
       data: {
         type: "SENADO_API",
-        name: "Senado Federal — Dados Abertos",
+        name: "Senado Federal — Dados Abertos Administrativos",
         url: result.requestedUrl,
         consultedAt: result.consultedAt,
         metadata: { itemCount: result.senators.length },
@@ -63,7 +63,7 @@ async function saveSenators(result: SenadoListResult): Promise<void> {
         },
       });
     }
-  });
+  }, { timeout: 30_000 });
 }
 
 async function main(): Promise<void> {

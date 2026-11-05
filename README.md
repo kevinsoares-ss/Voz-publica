@@ -59,6 +59,7 @@ Em outro terminal, importe uma página limitada de deputados oficiais:
 ```powershell
 npm run camara:sync:representatives --workspace @voz-publica/api -- --max-pages=1
 npm run senado:sync:representatives --workspace @voz-publica/api
+npm run senado:sync:expenses --workspace @voz-publica/api -- 2025
 ```
 
 Para percorrer todas as páginas retornadas pela Câmara (com limite de
@@ -76,20 +77,34 @@ npm run dev:mobile
 
 Pressione `w` no Expo para Web ou escaneie o QR code no Expo Go. A tela
 Agentes permite buscar e filtrar os registros sincronizados da Câmara e do
-Senado por cargo, partido, UF e município. A sincronização atual carregou
-513 deputados e 81 senadores nas fontes oficiais. Os demais fluxos incluem
-perfis com proveniência, favoritos locais, pesquisa de proposições,
-tramitações/votações da Câmara, consulta de despesas e votos individuais
-com estados vazios honestos. A tela Compromissos consulta os registros,
-e perfis consultam ações documentadas; a base ainda não tem conteúdo
-editorial cadastrado. A API de compromissos/ações está em modo somente
-leitura até que autenticação e autorização editoriais sejam implementadas.
+Senado por cargo, partido, UF e município; as quantidades dependem do resultado
+de cada consulta, sem totais presumidos. O Senado usa a API administrativa
+oficial para sincronizar a lista atual e despesas CEAPS por ano. Sincronize a
+lista antes das despesas; o app persiste apenas categoria, fornecedor, mês e
+valor, não CPF/CNPJ ou detalhes pessoais do arquivo de origem. Despesas CEAPS
+podem ser consultadas no perfil do senador após sincronização.
+
+Os demais fluxos incluem perfis com proveniência, favoritos locais, pesquisa
+de proposições, tramitações e votos individuais da Câmara, e consulta de
+despesas com estados vazios honestos. A integração do Senado é limitada à lista
+de senadores e às despesas CEAPS; proposições e votações do Senado não fazem
+parte do produto. A tela Compromissos consulta os registros, e perfis consultam
+ações documentadas; a base ainda não tem conteúdo editorial cadastrado. A API
+de compromissos/ações permanece somente leitura; o app não exige cadastro e não
+oferece escrita editorial.
 Na página inicial, a consulta da CGU permite buscar órgãos pelo catálogo
 SIAFI oficial e consultar despesas anuais do Executivo Federal. Configure
 `CGU_API_KEY` somente no `apps/api/.env`; a chave nunca deve ser colocada
 no app mobile.
-O suporte de despesas/votações específicas do Senado e de outros cargos
-depende da validação e integração de suas fontes.
+As telas principais seguem a direção institucional do planejamento UX/UI V3:
+Início, Agentes, Atuação, Despesas e Mais. O app permanece público e não
+apresenta cadastro ou login de cidadão.
+Também oferece busca global por agentes, órgãos SIAFI e identificadores de
+proposições da Câmara, diretório de órgãos, detalhes das fontes, ajuda e
+preferência de aparência persistida localmente. A busca legislativa respeita
+os filtros disponíveis na API oficial; não há busca textual de proposições
+nem integração de proposições/votações do Senado. Os dados locais podem ser
+limpos nas preferências.
 
 Para executar testes e verificações:
 
@@ -106,25 +121,29 @@ foram preservados em `apps/api/prisma/dev.db` e
 `apps/api/prisma/sqlite-migrations/`; os registros oficiais de demonstração
 são carregados novamente pelas sincronizações acima.
 
-## Publicação da API na Vercel
+## Publicação do Web e da API na Vercel
 
 Crie um projeto Vercel ligado ao repositório e deixe o **Root Directory**
-na raiz do repositório. O `vercel.json` da raiz declara o serviço `api`,
-cuja raiz é `apps/api`, e encaminha as rotas `/api/*` para
-`apps/api/api/index.ts`. O serviço usa o script `build` para gerar o Prisma
-Client e compilar o TypeScript. Configure no painel Vercel as variáveis
+na raiz do repositório. A função em `api/index.ts` encaminha as rotas
+`/api/*` ao handler da API em `apps/api/src/app.ts`, preservando o caminho
+original para rotas aninhadas. O build
+compila a API e exporta o aplicativo Expo Router para Web em
+`apps/mobile/dist`, que é o diretório publicado pela Vercel. Rotas web sem
+arquivo estático são redirecionadas ao app, e `/api/*` permanece atendido
+pela função.
+
+Configure no painel Vercel as variáveis
 `DATABASE_URL` (PostgreSQL acessível pela nuvem) e `CGU_API_KEY` (chave
 privada da CGU), pelo menos nos ambientes em que a API será executada. Não
 coloque esses valores no repositório, no app mobile ou em `vercel.json`.
 O `DATABASE_URL` também precisa estar disponível durante o build, pois a
 configuração do Prisma o valida ao gerar o client.
 
-Após o deploy, valide `https://<dominio-da-api>/api/health`. Para conectar
-o app publicado, configure `EXPO_PUBLIC_API_URL` no ambiente de build do
-mobile com a URL base da API Vercel; essa variável é pública e não deve
-conter segredos. O app mobile não é implantado como um serviço Vercel por
-essa configuração; a API acessa o banco Neon diretamente por
-`DATABASE_URL`, sem bindings entre serviços.
+Após o deploy, abra `https://<dominio>/` para acessar o app e valide
+`https://<dominio>/api/health` para verificar a API e o banco. No Web
+publicado, o app usa por padrão a mesma origem para as chamadas `/api/*`;
+`EXPO_PUBLIC_API_URL` pode sobrescrever essa URL se necessário. A API acessa
+o banco Neon diretamente por `DATABASE_URL`, sem bindings entre serviços.
 
 ## Documentação por etapa
 
