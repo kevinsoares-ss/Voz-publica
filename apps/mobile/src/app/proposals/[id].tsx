@@ -223,7 +223,7 @@ export default function ProposalDetailScreen() {
 const styles = StyleSheet.create({
   kicker: { color: colors.green, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
   title: { color: colors.ink, fontSize: 24, lineHeight: 30, fontWeight: "800" },
-  section: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 16, gap: 11 },
+  section: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 16, gap: 11 },
   sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: "800" },
   ementa: { color: colors.ink, fontSize: 14, lineHeight: 22 },
   muted: { color: colors.muted, fontSize: 12, lineHeight: 18 },

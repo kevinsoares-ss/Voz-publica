@@ -60,6 +60,7 @@ Em outro terminal, importe uma página limitada de deputados oficiais:
 npm run camara:sync:representatives --workspace @voz-publica/api -- --max-pages=1
 npm run senado:sync:representatives --workspace @voz-publica/api
 npm run senado:sync:expenses --workspace @voz-publica/api -- 2025
+npm run tse:sync:representatives --workspace @voz-publica/api
 ```
 
 Para percorrer todas as páginas retornadas pela Câmara (com limite de
@@ -76,13 +77,21 @@ npm run dev:mobile
 ```
 
 Pressione `w` no Expo para Web ou escaneie o QR code no Expo Go. A tela
-Agentes permite buscar e filtrar os registros sincronizados da Câmara e do
-Senado por cargo, partido, UF e município; as quantidades dependem do resultado
-de cada consulta, sem totais presumidos. O Senado usa a API administrativa
-oficial para sincronizar a lista atual e despesas CEAPS por ano. Sincronize a
-lista antes das despesas; o app persiste apenas categoria, fornecedor, mês e
-valor, não CPF/CNPJ ou detalhes pessoais do arquivo de origem. Despesas CEAPS
-podem ser consultadas no perfil do senador após sincronização.
+Agentes permite buscar representantes por nome, cargo, partido, UF e município.
+Deputados federais e senadores vêm das APIs oficiais da Câmara e do Senado.
+Presidente, governadores, prefeitos, deputados estaduais e vereadores vêm dos
+arquivos oficiais de candidaturas/resultados do TSE de 2022 e 2024. Esses dados
+identificam quem foi eleito naquele pleito, mas não confirmam substituições
+posteriores no mandato; a eleição e a fonte são exibidas no registro. Execute a
+sincronização TSE após aplicar as migrations para importar esses cargos. O
+app busca as fotos oficiais dos candidatos nos arquivos por UF do TSE usando
+requisições HTTP de intervalo, sem baixar o arquivo completo de imagens. Quando
+o TSE não publicou uma foto, o cartão mostra a inicial do nome.
+O Senado usa a API administrativa oficial para sincronizar a lista atual e
+despesas CEAPS por ano. Sincronize a lista antes das despesas; o app persiste
+apenas categoria, fornecedor, mês e valor, não CPF/CNPJ ou detalhes pessoais
+do arquivo de origem. Despesas CEAPS podem ser consultadas no perfil do senador
+após sincronização.
 
 Os demais fluxos incluem perfis com proveniência, favoritos locais, pesquisa
 de proposições, tramitações e votos individuais da Câmara, e consulta de
@@ -92,9 +101,11 @@ parte do produto. A tela Compromissos consulta os registros, e perfis consultam
 ações documentadas; a base ainda não tem conteúdo editorial cadastrado. A API
 de compromissos/ações permanece somente leitura; o app não exige cadastro e não
 oferece escrita editorial.
-Na página inicial, a consulta da CGU permite buscar órgãos pelo catálogo
-SIAFI oficial e consultar despesas anuais do Executivo Federal. Configure
-`CGU_API_KEY` somente no `apps/api/.env`; a chave nunca deve ser colocada
+Na tela de despesas, os órgãos do catálogo SIAFI oficial da CGU são listados por
+categoria (ministérios, agências, universidades, institutos e fundações) e
+permitem consultar despesas anuais do Executivo Federal. Configure
+`CGU_API_KEY` em `apps/api/.env` durante o desenvolvimento local e nas
+variáveis de ambiente de produção da Vercel; a chave nunca deve ser colocada
 no app mobile.
 As telas principais seguem a direção institucional do planejamento UX/UI V3:
 Início, Agentes, Atuação, Despesas e Mais. O app permanece público e não

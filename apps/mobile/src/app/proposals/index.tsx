@@ -119,7 +119,7 @@ export default function ProposalsScreen() {
       {!loading && error ? <ErrorState message={error} onRetry={() => void search()} /> : null}
       {!loading && !error && records.length === 0 ? (
         <EmptyState
-          title="Nenhuma proposição retornada"
+          title="Dados não encontrados"
           body="A fonte não retornou proposições para estes filtros. Tente outro tipo ou ano; não presumimos resultados ausentes."
         />
       ) : null}
@@ -164,11 +164,11 @@ const styles = StyleSheet.create({
   filters: { flexDirection: "row", alignItems: "flex-end", gap: 9 },
   field: { flex: 1, gap: 5 },
   label: { color: colors.muted, fontSize: 11, fontWeight: "700" },
-  input: { backgroundColor: colors.white, color: colors.ink, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12 },
+  input: { backgroundColor: colors.surface, color: colors.ink, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 12 },
   searchButton: { backgroundColor: colors.forest, borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12 },
-  searchButtonText: { color: colors.white, fontWeight: "800", fontSize: 13 },
+  searchButtonText: { color: colors.onPrimary, fontWeight: "800", fontSize: 13 },
   resultLabel: { color: colors.muted, fontSize: 12 },
-  card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, gap: 8 },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, gap: 8 },
   badge: { color: colors.green, fontSize: 11, fontWeight: "800" },
   cardTitle: { color: colors.ink, fontSize: 14, lineHeight: 21, fontWeight: "600" },
   cardLink: { color: colors.forest, fontSize: 12, fontWeight: "700" },

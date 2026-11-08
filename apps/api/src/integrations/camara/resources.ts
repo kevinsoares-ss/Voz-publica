@@ -129,7 +129,7 @@ export async function listOfficialProposals(input: {
   if (query.number !== undefined) {
     url.searchParams.set("numero", String(query.number));
   }
-  if (query.authorId) url.searchParams.set("idAutor", query.authorId);
+  if (query.authorId) url.searchParams.set("idDeputadoAutor", query.authorId);
 
   const parsed = listEnvelopeSchema.safeParse(await requestJson(url));
   if (!parsed.success) {

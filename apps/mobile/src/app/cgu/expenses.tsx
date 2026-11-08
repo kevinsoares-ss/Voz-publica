@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import {
   EmptyState,
   ErrorState,
@@ -17,6 +25,14 @@ import {
 import { colors } from "../../theme/colors";
 
 type Result = Awaited<ReturnType<typeof getCguAnnualExpenses>>;
+const AGENCY_GROUPS = [
+  { id: "ministries", label: "Ministérios", search: "Ministério" },
+  { id: "agencies", label: "Agências", search: "Agência" },
+  { id: "universities", label: "Universidades", search: "Universidade" },
+  { id: "institutes", label: "Institutos", search: "Instituto" },
+  { id: "foundations", label: "Fundações", search: "Fundação" },
+] as const;
+type AgencyGroupId = (typeof AGENCY_GROUPS)[number]["id"];
 
 export default function CguExpensesScreen() {
   const params = useLocalSearchParams<{
@@ -32,14 +48,17 @@ export default function CguExpensesScreen() {
   const [yearText, setYearText] = useState(String(new Date().getFullYear()));
   const [year, setYear] = useState(new Date().getFullYear());
   const [page, setPage] = useState(1);
-  const [agencySearch, setAgencySearch] = useState(agencyName ?? "");
+  const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>("ministries");
+  const [agencyPage, setAgencyPage] = useState(1);
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
   const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(
     agencyCode
       ? { codigo: agencyCode, descricao: agencyName ?? null }
       : null,
   );
-  const [searchingAgencies, setSearchingAgencies] = useState(false);
+  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [hasMoreAgencies, setHasMoreAgencies] = useState(true);
+  const [agencyError, setAgencyError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -49,13 +68,42 @@ export default function CguExpensesScreen() {
 
   useEffect(() => {
     if (!agencyCode) return;
-    setAgencySearch(agencyName ?? "");
     setSelectedAgency({ codigo: agencyCode, descricao: agencyName ?? null });
-    setAgencies([]);
     setResult(null);
     setError("");
     setHasMore(true);
   }, [agencyCode, agencyName]);
+
+  async function loadAgencyPage(
+    groupId: AgencyGroupId,
+    nextPage: number,
+    append = false,
+  ) {
+    setLoadingAgencies(true);
+    setAgencyError("");
+    try {
+      const group = AGENCY_GROUPS.find((item) => item.id === groupId);
+      if (!group) throw new Error("Categoria de órgãos inválida.");
+      const response = await getCguAgencies(group.search, nextPage);
+      setAgencies((current) =>
+        append ? [...current, ...response.data] : response.data,
+      );
+      setAgencyPage(nextPage);
+      setHasMoreAgencies(response.data.length >= 15);
+    } catch (caught) {
+      setAgencyError(
+        caught instanceof Error
+          ? caught.message
+          : "Não foi possível carregar o catálogo oficial da CGU.",
+      );
+    } finally {
+      setLoadingAgencies(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadAgencyPage("ministries", 1);
+  }, []);
 
   const load = useCallback(async (nextYear: number, nextPage = 1) => {
     if (
@@ -69,7 +117,7 @@ export default function CguExpensesScreen() {
       return;
     }
     if (!selectedAgency?.codigo) {
-      setError("Pesquise e selecione um órgão oficial antes da consulta.");
+      setError("Escolha um órgão da lista oficial antes da consulta.");
       return;
     }
 
@@ -106,82 +154,98 @@ export default function CguExpensesScreen() {
     }
   }, [result, selectedAgency]);
 
-  async function searchAgencies() {
-    const search = agencySearch.trim();
-    if (search.length < 2) {
-      setError("Digite pelo menos 2 caracteres para pesquisar órgãos.");
-      return;
-    }
-    setSearchingAgencies(true);
-    setError("");
+  function chooseAgencyGroup(groupId: AgencyGroupId) {
+    setAgencyGroup(groupId);
     setSelectedAgency(null);
     setResult(null);
+    setError("");
+    setAgencies([]);
+    setAgencyPage(1);
+    setHasMoreAgencies(true);
+    void loadAgencyPage(groupId, 1);
+  }
+
+  function chooseAgency(agency: CguAgency) {
+    setSelectedAgency(agency);
+    setResult(null);
     setHasMore(true);
-    try {
-      const response = await getCguAgencies(search);
-      setAgencies(response.data);
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Não foi possível pesquisar órgãos na CGU.",
-      );
-    } finally {
-      setSearchingAgencies(false);
-    }
+    setError("");
   }
 
   return (
     <Screen>
-      <Text style={styles.kicker}>FONTE OFICIAL · CGU</Text>
-      <Text style={styles.title}>Despesas por órgão</Text>
-      <Text style={styles.subtitle}>
-        Despesas anuais agregadas do Poder Executivo Federal; não são despesas
-        pessoais de parlamentares.
-      </Text>
-      <Notice
-        title="Valores conforme a fonte"
-        body="Empenhado, liquidado e pago são campos publicados pela CGU. O app não soma, estima ou converte os valores retornados."
+    <Text style={styles.kicker}>FONTE OFICIAL · CGU</Text>
+    <Text style={styles.title}>Despesas por órgão</Text>
+    <Text style={styles.subtitle}>
+      Despesas anuais agregadas do Poder Executivo Federal; não são despesas
+      pessoais de parlamentares.
+    </Text>
+    <Notice
+      title="Valores conforme a fonte"
+      body="Empenhado, liquidado e pago são campos publicados pela CGU. O app não soma, estima ou converte os valores retornados."
+    />
+    <Text style={styles.label}>Ano</Text>
+    <TextInput
+      value={yearText}
+      onChangeText={setYearText}
+      keyboardType="number-pad"
+      maxLength={4}
+      style={styles.input}
+      accessibilityLabel="Ano das despesas da CGU"
+    />
+    <Text style={styles.sectionTitle}>Órgãos e ministérios</Text>
+    <Text style={styles.meta}>
+      Escolha uma categoria para listar os órgãos do cadastro oficial SIAFI.
+    </Text>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.agencyGroups}
+      accessibilityLabel="Categorias de órgãos"
+    >
+      {AGENCY_GROUPS.map((group) => (
+        <Pressable
+          key={group.id}
+          accessibilityRole="button"
+          accessibilityState={{ selected: agencyGroup === group.id }}
+          onPress={() => chooseAgencyGroup(group.id)}
+          style={[
+            styles.agencyGroup,
+            agencyGroup === group.id && styles.agencyGroupSelected,
+          ]}
+        >
+          <Text
+            style={[
+              styles.agencyGroupText,
+              agencyGroup === group.id && styles.agencyGroupTextSelected,
+            ]}
+          >
+            {group.label}
+          </Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+    {loadingAgencies && agencies.length === 0 ? (
+      <LoadingState label="Carregando órgãos oficiais..." />
+    ) : null}
+    {!loadingAgencies && agencyError ? (
+      <ErrorState
+        message={agencyError}
+        onRetry={() => void loadAgencyPage(agencyGroup, agencyPage, agencyPage > 1)}
       />
-      <Text style={styles.label}>Ano</Text>
-      <TextInput
-        value={yearText}
-        onChangeText={setYearText}
-        keyboardType="number-pad"
-        maxLength={4}
-        style={styles.input}
-        accessibilityLabel="Ano das despesas da CGU"
+    ) : null}
+    {!loadingAgencies && !agencyError && agencies.length === 0 ? (
+      <EmptyState
+        title="Órgãos não encontrados"
+        body="A CGU não retornou órgãos nesta categoria."
       />
-      <Text style={styles.label}>Pesquise o órgão no cadastro oficial SIAFI</Text>
-      <TextInput
-        value={agencySearch}
-        onChangeText={setAgencySearch}
-        maxLength={100}
-        style={styles.input}
-        accessibilityLabel="Nome do órgão para pesquisar na CGU"
-        placeholder="Ex.: Ministério da Saúde"
-        placeholderTextColor={colors.muted}
-      />
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void searchAgencies()}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>
-          {searchingAgencies ? "Pesquisando..." : "Pesquisar órgãos oficiais"}
-        </Text>
-      </Pressable>
+    ) : null}
       {agencies.map((agency, index) => (
         <Pressable
           key={`${agency.codigo ?? "orgao"}-${index}`}
           accessibilityRole="button"
           accessibilityState={{ selected: selectedAgency?.codigo === agency.codigo }}
-          onPress={() => {
-            setSelectedAgency(agency);
-            setResult(null);
-            setHasMore(true);
-            setError("");
-          }}
+          onPress={() => chooseAgency(agency)}
           style={[
             styles.agencyOption,
             selectedAgency?.codigo === agency.codigo ? styles.selectedAgency : null,
@@ -195,10 +259,17 @@ export default function CguExpensesScreen() {
           </Text>
         </Pressable>
       ))}
-      {agencies.length === 0 && !searchingAgencies && agencySearch.length >= 2 ? (
-        <Text style={styles.meta}>
-          Pesquise para exibir órgãos retornados pelo cadastro oficial da CGU.
-        </Text>
+      {hasMoreAgencies && agencies.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={loadingAgencies}
+          onPress={() => void loadAgencyPage(agencyGroup, agencyPage + 1, true)}
+          style={styles.moreButton}
+        >
+          <Text style={styles.buttonText}>
+            {loadingAgencies ? "Carregando..." : "Carregar mais órgãos"}
+          </Text>
+        </Pressable>
       ) : null}
       {selectedAgency ? (
         <Pressable
@@ -210,22 +281,26 @@ export default function CguExpensesScreen() {
             Consultar despesas de {selectedAgency.descricao ?? "órgão selecionado"}
           </Text>
         </Pressable>
-      ) : (
+      ) : null}
+      {!selectedAgency && !loadingAgencies && !agencyError ? (
         <EmptyState
           title="Selecione um órgão oficial"
-          body="As despesas anuais por órgão exigem um código SIAFI retornado pelo cadastro oficial. Nenhum código é presumido."
+          body="As despesas anuais por órgão exigem um código SIAFI retornado pela lista oficial. Nenhum código é presumido."
         />
-      )}
+      ) : null}
       {loading ? <LoadingState label="Consultando a fonte oficial da CGU..." /> : null}
       {!loading && error ? (
         <ErrorState
           message={error}
-          onRetry={() => void load(year, page)}
+          onRetry={() => {
+            if (selectedAgency) void load(year, page);
+            else void loadAgencyPage(agencyGroup, agencyPage, agencyPage > 1);
+          }}
         />
       ) : null}
       {!loading && !error && result?.data.length === 0 ? (
         <EmptyState
-          title="Nenhuma despesa retornada"
+          title="Dados não encontrados"
           body={`A CGU não retornou registros para a página consultada de ${year}. Isso descreve somente esta consulta; não significa que as despesas do período sejam zero.`}
         />
       ) : null}
@@ -362,8 +437,24 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: -8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -8 },
   label: { color: colors.muted, fontSize: 12, fontWeight: "700", marginBottom: -8 },
+  sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: "800" },
+  agencyGroups: { flexDirection: "row", gap: 8, paddingVertical: 2 },
+  agencyGroup: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+  },
+  agencyGroupSelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  agencyGroupText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
+  agencyGroupTextSelected: { color: colors.primary, fontWeight: "800" },
   input: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 12,
@@ -376,9 +467,9 @@ const styles = StyleSheet.create({
     padding: 13,
     alignItems: "center",
   },
-  buttonText: { color: colors.white, fontWeight: "800" },
+  buttonText: { color: colors.onPrimary, fontWeight: "800" },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 16,
@@ -387,7 +478,7 @@ const styles = StyleSheet.create({
   },
   agencyName: { color: colors.ink, fontSize: 15, fontWeight: "800" },
   agencyOption: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 13,

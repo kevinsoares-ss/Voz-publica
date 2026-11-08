@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 28, lineHeight: 34, fontWeight: "800" },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -8 },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 14,
@@ -91,5 +91,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: { color: colors.white, fontWeight: "800" },
+  buttonText: { color: colors.onPrimary, fontWeight: "800" },
 });

@@ -73,7 +73,7 @@ export default function AgenciesScreen() {
       {!loading && error ? <ErrorState message={error} onRetry={() => void search()} /> : null}
       {!loading && !error && searched && agencies.length === 0 ? (
         <EmptyState
-          title="Nenhum órgão retornado"
+          title="Dados não encontrados"
           body="O catálogo SIAFI não retornou resultados para este termo. Tente parte do nome ou uma grafia diferente."
         />
       ) : null}
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   label: { color: colors.ink, fontSize: 13, fontWeight: "700" },
   input: {
     minHeight: 48,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 12,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   disabled: { opacity: 0.6 },
-  buttonText: { color: colors.white, fontWeight: "800" },
+  buttonText: { color: colors.onPrimary, fontWeight: "800" },
   card: {
     minHeight: 72,
     flexDirection: "row",
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
   },
   pressed: { opacity: 0.82 },
   cardCopy: { flex: 1, gap: 5 },

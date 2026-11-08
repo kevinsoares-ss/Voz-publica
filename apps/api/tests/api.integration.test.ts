@@ -11,6 +11,7 @@ test("representative API validates requests and returns provenance-backed record
   const suffix = randomUUID();
   const sourceId = randomUUID();
   const externalId = `test-${suffix}`;
+  const tseCandidateId = `2024-${Date.now()}${Math.floor(Math.random() * 1_000_000)}`;
   const senatorExternalId = `senado-${suffix}`;
   const senatorExpenseExternalId = String(Date.now());
   const name = `API test fixture ${suffix}`;
@@ -39,6 +40,20 @@ test("representative API validates requests and returns provenance-backed record
         role: "FEDERAL_DEPUTY",
         sphere: "FEDERAL",
         powerBranch: "LEGISLATIVE",
+        lastSyncedAt: new Date(),
+        sourceId,
+      },
+    });
+    await prisma.representative.create({
+      data: {
+        sourceNamespace: "tse",
+        externalId: tseCandidateId,
+        name: `TSE API fixture ${suffix}`,
+        role: "MAYOR",
+        sphere: "MUNICIPAL",
+        powerBranch: "EXECUTIVE",
+        state: "SP",
+        city,
         lastSyncedAt: new Date(),
         sourceId,
       },
@@ -138,6 +153,24 @@ test("representative API validates requests and returns provenance-backed record
     assert.equal(politicianBody.data[0].role, "FEDERAL_DEPUTY");
     assert.equal(politicianBody.data[0].sphere, "FEDERAL");
     assert.equal(politicianBody.data[0].source.url, "https://example.invalid/test-fixture");
+
+    const caseInsensitivePoliticianResponse = await fetch(
+      `${baseUrl}/api/politicians?search=${encodeURIComponent(name.toLowerCase())}&party=test&state=df&city=${encodeURIComponent(city.toUpperCase())}`,
+    );
+    assert.equal(caseInsensitivePoliticianResponse.status, 200);
+    assert.equal(
+      (await caseInsensitivePoliticianResponse.json()).pagination.total,
+      1,
+    );
+    const tsePoliticianResponse = await fetch(
+      `${baseUrl}/api/politicians?role=MAYOR&search=${encodeURIComponent(`TSE API fixture ${suffix}`)}`,
+    );
+    assert.equal(tsePoliticianResponse.status, 200);
+    const tsePoliticianBody = await tsePoliticianResponse.json();
+    assert.equal(
+      tsePoliticianBody.data[0].photoUrl,
+      `/api/tse/photos/2024/SP/${tseCandidateId.slice("2024-".length)}`,
+    );
 
     const politicianDetailResponse = await fetch(
       `${baseUrl}/api/politicians/${externalId}`,
@@ -249,6 +282,9 @@ test("representative API validates requests and returns provenance-backed record
       where: { id: senateExpenseSourceId },
     });
     await prisma.representative.deleteMany({ where: { externalId } });
+    await prisma.representative.deleteMany({
+      where: { sourceNamespace: "tse", externalId: tseCandidateId },
+    });
     await prisma.representative.deleteMany({
       where: { sourceNamespace: "senado", externalId: senatorExternalId },
     });

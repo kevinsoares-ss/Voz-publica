@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { EmptyState, ErrorState, LoadingState } from "../../components/Feedback";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Notice,
+} from "../../components/Feedback";
 import { RepresentativeCard } from "../../components/RepresentativeCard";
 import { Screen } from "../../components/Screen";
 import { getFavoriteIds, setFavorite } from "../../services/favorites";
@@ -107,8 +112,12 @@ export default function RepresentativesScreen() {
       <Text style={styles.kicker}>TRANSPARÊNCIA POLÍTICA</Text>
       <Text style={styles.title}>Agentes públicos</Text>
       <Text style={styles.subtitle}>
-        Encontre representantes por nome, cargo e localidade nas fontes oficiais.
+        Busque representantes por nome, cargo, partido, estado e município.
       </Text>
+      <Notice
+        title="Origem dos dados eleitorais"
+        body="Presidente, governador, prefeito, deputado estadual e vereador são importados dos resultados oficiais do TSE. O resultado eleitoral não confirma substituições posteriores no mandato; o ano e a fonte aparecem em cada registro."
+      />
       <Text style={styles.fieldLabel}>Buscar por nome</Text>
       <TextInput
         accessibilityLabel="Buscar por nome do agente público"
@@ -161,6 +170,14 @@ export default function RepresentativesScreen() {
           style={[styles.search, styles.ufInput]}
         />
       </View>
+      <TextInput
+        accessibilityLabel="Filtrar por município"
+        placeholder="Município"
+        placeholderTextColor={colors.muted}
+        value={city}
+        onChangeText={setCity}
+        style={styles.search}
+      />
       {query || party || state || city || role ? (
         <View style={styles.activeFilters}>
           <Text style={styles.activeLabel}>Filtros ativos</Text>
@@ -170,7 +187,8 @@ export default function RepresentativesScreen() {
                 query && `Nome: ${query}`,
                 party && `Partido: ${party}`,
                 state && `UF: ${state}`,
-                city && `Município: ${city}`]
+                city && `Município: ${city}`,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </Text>
@@ -191,15 +209,7 @@ export default function RepresentativesScreen() {
           </View>
         </View>
       ) : null}
-      <View style={styles.filters}>
-        <TextInput
-          accessibilityLabel="Filtrar por município"
-          placeholder="Município"
-          placeholderTextColor={colors.muted}
-          value={city}
-          onChangeText={setCity}
-          style={[styles.search, styles.filterInput]}
-        />
+      <View style={styles.clearFiltersRow}>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -227,8 +237,8 @@ export default function RepresentativesScreen() {
       ) : null}
       {!loading && !error && representatives.length === 0 ? (
         <EmptyState
-          title="Nenhum registro encontrado"
-          body="A consulta não retornou registros para estes filtros. A cobertura depende das fontes oficiais já integradas."
+          title="Dados não encontrados"
+          body="As fontes integradas não retornaram registros para estes filtros. Confira o nome, partido ou UF e tente novamente."
           actionLabel="Limpar filtros"
           onAction={() => {
             setQuery("");
@@ -274,10 +284,11 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", marginTop: -8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -9 },
   fieldLabel: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: -9 },
-  search: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 13, paddingVertical: 12, paddingHorizontal: 14, color: colors.ink, fontSize: 14 },
+  search: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 13, paddingVertical: 12, paddingHorizontal: 14, color: colors.ink, fontSize: 14 },
   filters: { flexDirection: "row", gap: 8, alignItems: "center" },
+  clearFiltersRow: { alignItems: "flex-end" },
   roleFilters: { flexDirection: "row", gap: 8, paddingVertical: 2 },
-  roleChip: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8 },
+  roleChip: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8 },
   roleChipSelected: { backgroundColor: colors.forest, borderColor: colors.forest },
   roleChipText: { color: colors.ink, fontSize: 12, fontWeight: "600" },
   roleChipTextSelected: { color: colors.white },
@@ -303,6 +314,6 @@ const styles = StyleSheet.create({
   resultCount: { color: colors.muted, fontSize: 12 },
   refresh: { color: colors.forest, fontSize: 12, fontWeight: "700" },
   moreButton: { backgroundColor: colors.forest, borderRadius: 13, alignItems: "center", padding: 14 },
-  moreText: { color: colors.white, fontWeight: "700" },
+  moreText: { color: colors.onPrimary, fontWeight: "700" },
   footnote: { color: colors.muted, fontSize: 11, textAlign: "center", lineHeight: 17 },
 });

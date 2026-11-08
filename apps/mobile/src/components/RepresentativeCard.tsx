@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "../theme/colors";
-import type { Representative } from "../services/api";
+import { getApiAssetUrl, type Representative } from "../services/api";
 
 export function RepresentativeCard({
   representative,
@@ -13,6 +14,11 @@ export function RepresentativeCard({
   onPress: () => void;
   onToggleFavorite: () => void;
 }) {
+  const [photoUnavailable, setPhotoUnavailable] = useState(false);
+  const photoUri = representative.photoUrl
+    ? getApiAssetUrl(representative.photoUrl)
+    : null;
+
   return (
     <View style={styles.card}>
       <Pressable
@@ -21,8 +27,12 @@ export function RepresentativeCard({
         onPress={onPress}
         style={styles.main}
       >
-        {representative.photoUrl ? (
-          <Image source={{ uri: representative.photoUrl }} style={styles.photo} />
+        {photoUri && !photoUnavailable ? (
+          <Image
+            source={{ uri: photoUri }}
+            style={styles.photo}
+            onError={() => setPhotoUnavailable(true)}
+          />
         ) : (
           <View style={[styles.photo, styles.placeholder]}>
             <Text style={styles.initial}>
@@ -72,7 +82,7 @@ function roleLabel(role: Representative["role"]): string {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 18,

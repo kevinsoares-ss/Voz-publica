@@ -21,7 +21,7 @@ const listQuerySchema = z.object({
   sphere: sphereSchema.optional(),
   state: z.string().trim().length(2).transform((value) => value.toUpperCase()).optional(),
   city: z.string().trim().min(1).max(100).optional(),
-  party: z.string().trim().min(1).max(30).optional(),
+  party: z.string().trim().min(1).max(30).transform((value) => value.toUpperCase()).optional(),
 });
 const politicianIdSchema = z
   .string()
@@ -42,6 +42,21 @@ function publicId(sourceNamespace: string, externalId: string): string {
   return sourceNamespace === "camara"
     ? externalId
     : `${sourceNamespace}:${externalId}`;
+}
+
+function photoUrl(
+  sourceNamespace: string,
+  externalId: string,
+  state: string | null,
+  existingUrl: string | null,
+): string | null {
+  if (existingUrl || sourceNamespace !== "tse") return existingUrl;
+  const match = externalId.match(/^(2022|2024)-(\d{1,20})$/);
+  if (!match) return null;
+  const photoState = state ?? (match[1] === "2022" ? "BR" : null);
+  return photoState
+    ? `/api/tse/photos/${match[1]}/${photoState}/${match[2]}`
+    : null;
 }
 
 export async function listPoliticians(
@@ -75,11 +90,11 @@ export async function listPoliticians(
 
   const { page, limit, search, role, sphere, state, city, party } = parsed.data;
   const where = {
-    ...(search ? { name: { contains: search } } : {}),
+    ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
     ...(role ? { role } : {}),
     ...(sphere ? { sphere } : {}),
     ...(state ? { state } : {}),
-    ...(city ? { city: { contains: city } } : {}),
+    ...(city ? { city: { contains: city, mode: "insensitive" as const } } : {}),
     ...(party ? { party } : {}),
   };
   const [total, politicians] = await prisma.$transaction([
@@ -113,6 +128,12 @@ export async function listPoliticians(
   sendJson(response, 200, {
     data: politicians.map((politician) => ({
       ...politician,
+      photoUrl: photoUrl(
+        politician.sourceNamespace,
+        politician.externalId,
+        politician.state,
+        politician.photoUrl,
+      ),
       id: publicId(politician.sourceNamespace, politician.externalId),
     })),
     pagination: {
@@ -164,6 +185,12 @@ export async function getPolitician(
   sendJson(response, 200, {
     data: {
       ...politician,
+      photoUrl: photoUrl(
+        politician.sourceNamespace,
+        politician.externalId,
+        politician.state,
+        politician.photoUrl,
+      ),
       id: publicId(politician.sourceNamespace, politician.externalId),
     },
   });

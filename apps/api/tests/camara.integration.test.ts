@@ -5,6 +5,7 @@ import {
   CamaraClient,
   type FetchImplementation,
 } from "../src/integrations/camara/client.js";
+import { listOfficialProposals } from "../src/integrations/camara/resources.js";
 import { syncRepresentatives } from "../src/integrations/camara/sync-representatives.js";
 
 const baseUrl = "https://dadosabertos.camara.leg.br/api/v2/";
@@ -120,6 +121,31 @@ test("Câmara client surfaces upstream HTTP, response-format, and timeout errors
   await assert.rejects(timeoutClient.listDeputiesPage(1), {
     code: "CAMARA_TIMEOUT",
   });
+});
+
+test("official proposal list filters by deputy author using the Câmara API parameter", async () => {
+  const requestedUrls: URL[] = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(new URL(String(input)));
+    return jsonResponse({ dados: [], links: [] });
+  };
+
+  try {
+    await listOfficialProposals({
+      page: 1,
+      limit: 20,
+      year: 2025,
+      type: "PL",
+      authorId: "204549",
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(requestedUrls.length, 1);
+  assert.equal(requestedUrls[0].searchParams.get("idDeputadoAutor"), "204549");
+  assert.equal(requestedUrls[0].searchParams.get("idAutor"), null);
 });
 
 test("representative synchronization follows source pagination and respects its page cap", async () => {

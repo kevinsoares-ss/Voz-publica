@@ -72,13 +72,13 @@ test("CGU client searches agencies using the official SIAFI catalogue", async ()
 
   const result = await client.searchAgencies({
     description: "Ministério",
-    page: 1,
+    page: 2,
   });
 
   assert.equal(result.data[0].codigo, "26000");
   assert.equal(requestedUrl?.pathname, "/api-de-dados/orgaos-siafi");
   assert.equal(requestedUrl?.searchParams.get("descricao"), "Ministério");
-  assert.equal(requestedUrl?.searchParams.get("pagina"), "1");
+  assert.equal(requestedUrl?.searchParams.get("pagina"), "2");
 });
 
 test("CGU client reports missing keys, upstream failures, and invalid responses", async () => {
@@ -88,9 +88,13 @@ test("CGU client reports missing keys, upstream failures, and invalid responses"
       throw new Error("Must not make a request without a key.");
     },
   });
-  await assert.rejects(missingKeyClient.listAnnualExpenses({ year: 2025, page: 1 }), {
-    code: "CGU_API_KEY_MISSING",
-  });
+  await assert.rejects(
+    missingKeyClient.listAnnualExpenses({ year: 2025, page: 1 }),
+    (error: unknown) =>
+      error instanceof CguApiError &&
+      error.code === "CGU_API_KEY_MISSING" &&
+      error.message.includes("CGU_API_KEY"),
+  );
 
   const unauthorizedClient = new CguClient({
     apiKey: "test-secret",

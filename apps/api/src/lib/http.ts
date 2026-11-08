@@ -10,7 +10,7 @@ export interface ApiResponse {
   headersSent: boolean;
   setHeader(name: string, value: string): void;
   writeHead(statusCode: number, headers?: Record<string, string>): void;
-  end(body?: string): void;
+  end(body?: string | Uint8Array): void;
   destroy(error?: Error): void;
 }
 

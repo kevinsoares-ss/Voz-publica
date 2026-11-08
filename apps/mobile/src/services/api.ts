@@ -181,6 +181,11 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+export function getApiAssetUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 type ApiErrorResponse = {
   error?: {
     message?: string;
@@ -271,12 +276,12 @@ export function getCguAnnualExpenses(options: {
   return request(`/api/cgu/expenses?${query.toString()}`);
 }
 
-export function getCguAgencies(search: string): Promise<{
+export function getCguAgencies(search: string, page = 1): Promise<{
   data: CguAgency[];
   source: OfficialList["source"];
   pagination: { page: number };
 }> {
-  const query = new URLSearchParams({ search, page: "1" });
+  const query = new URLSearchParams({ search, page: String(page) });
   return request(`/api/cgu/agencies?${query.toString()}`);
 }
 

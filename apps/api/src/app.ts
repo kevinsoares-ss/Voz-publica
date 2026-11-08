@@ -27,6 +27,7 @@ import {
   listCguAgencies,
   listCguExpenses,
 } from "./integrations/cgu/routes.js";
+import { getTseCandidatePhoto, TsePhotoError } from "./integrations/tse/photos.js";
 
 const MAX_URL_LENGTH = 8_192;
 const allowedOrigins = new Set(
@@ -101,6 +102,42 @@ async function handleRequest(
 
   if (url.pathname === "/api/cgu/agencies") {
     await listCguAgencies(url, response, cguClient);
+    return;
+  }
+
+  const tsePhotoMatch = url.pathname.match(
+    /^\/api\/tse\/photos\/(2022|2024)\/([A-Z]{2})\/(\d{1,20})$/,
+  );
+  if (tsePhotoMatch) {
+    try {
+      const photo = await getTseCandidatePhoto({
+        year: Number(tsePhotoMatch[1]),
+        state: tsePhotoMatch[2],
+        candidateId: tsePhotoMatch[3],
+      });
+      if (!photo) {
+        sendError(response, 404, "NOT_FOUND", "The TSE did not provide this candidate photo.");
+        return;
+      }
+      response.writeHead(200, {
+        "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+        "content-length": String(photo.bytes.length),
+        "content-type": photo.contentType,
+        "x-content-type-options": "nosniff",
+      });
+      response.end(photo.bytes);
+    } catch (error) {
+      if (error instanceof TsePhotoError) {
+        sendError(
+          response,
+          error.statusCode,
+          error.statusCode === 404 ? "NOT_FOUND" : "TSE_PHOTO_UNAVAILABLE",
+          error.message,
+        );
+        return;
+      }
+      throw error;
+    }
     return;
   }
 
@@ -249,7 +286,11 @@ export function createApiFetchHandler(options: { cguClient?: CguClient } = {}) {
           settled = true;
           response.headersSent = true;
           const responseBody =
-            statusCode === 204 || statusCode === 304 ? null : body ?? null;
+            statusCode === 204 || statusCode === 304
+              ? null
+              : body instanceof Uint8Array
+                ? copyArrayBuffer(body)
+                : body ?? null;
           resolve(
             new Response(responseBody, {
               status: statusCode,
@@ -274,6 +315,12 @@ export function createApiFetchHandler(options: { cguClient?: CguClient } = {}) {
         response,
       );
     });
+}
+
+function copyArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
 }
 
 export function createApiServer(options: { cguClient?: CguClient } = {}) {

@@ -102,5 +102,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: { color: colors.white, fontWeight: "800" },
+  buttonText: { color: colors.onPrimary, fontWeight: "800" },
 });

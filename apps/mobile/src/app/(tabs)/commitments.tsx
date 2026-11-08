@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", marginTop: -8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -9 },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 17,
@@ -282,9 +282,9 @@ const styles = StyleSheet.create({
     padding: 13,
     alignItems: "center",
   },
-  moreButtonText: { color: colors.white, fontWeight: "800" },
+  moreButtonText: { color: colors.onPrimary, fontWeight: "800" },
   info: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 17,

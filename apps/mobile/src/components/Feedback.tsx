@@ -70,7 +70,7 @@ export function Notice({
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 11,
   },
-  actionText: { color: colors.white, fontWeight: "700" },
+  actionText: { color: colors.onPrimary, fontWeight: "700" },
   notice: {
     backgroundColor: colors.amberBackground,
     borderRadius: 14,

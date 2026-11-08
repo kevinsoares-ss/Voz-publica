@@ -154,7 +154,7 @@ export default function HomeScreen() {
       <View style={styles.shortcutGrid}>
         <Shortcut
           label="Agentes públicos"
-          detail="Cargo, partido e localidade"
+          detail="Cargo, partido e UF"
           icon="◎"
           onPress={() => router.push("/(tabs)/representatives" as Href)}
         />
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
   },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 9,
     paddingHorizontal: 12,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginTop: 2,
   },
@@ -292,15 +292,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignSelf: "flex-start",
   },
-  primaryButtonText: { color: colors.white, fontWeight: "800", fontSize: 14 },
-  primaryArrow: { color: colors.white, fontSize: 18 },
+  primaryButtonText: { color: colors.onPrimary, fontWeight: "800", fontSize: 14 },
+  primaryArrow: { color: colors.onPrimary, fontSize: 18 },
   statusCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 11,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
   },
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minHeight: 138,
     padding: 15,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 16,
@@ -358,13 +358,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   trustGlyph: { color: colors.primary, fontSize: 18, fontWeight: "800" },
   trustCopy: { flex: 1, gap: 3 },
-  trustTitle: { color: colors.navy, fontSize: 14, fontWeight: "800" },
+  trustTitle: { color: colors.ink, fontSize: 14, fontWeight: "800" },
   trustBody: { color: colors.muted, fontSize: 12, lineHeight: 17 },
   arrow: { color: colors.primary, fontSize: 25 },
 });

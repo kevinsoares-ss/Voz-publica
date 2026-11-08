@@ -14,14 +14,16 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:test": "tsc --noEmit -p tsconfig.test.json && tsx --test tests/database.integration.test.ts tests/api.integration.test.ts tests/camara.integration.test.ts tests/senado.integration.test.ts tests/records.integration.test.ts tests/cgu.integration.test.ts",
+    "db:test": "tsc --noEmit -p tsconfig.test.json && tsx --test tests/database.integration.test.ts tests/api.integration.test.ts tests/camara.integration.test.ts tests/senado.integration.test.ts tests/records.integration.test.ts tests/cgu.integration.test.ts tests/tse.integration.test.ts",
     "camara:sync:representatives": "tsx src/integrations/camara/sync-representatives.ts",
     "senado:sync:representatives": "tsx src/integrations/senado/sync-senators.ts",
-    "senado:sync:expenses": "tsx src/integrations/senado/sync-expenses.ts"
+    "senado:sync:expenses": "tsx src/integrations/senado/sync-expenses.ts",
+    "tse:sync:representatives": "tsx src/integrations/tse/sync-representatives.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
+    "@types/yauzl": "^3.4.0",
     "prisma": "^7.10.1",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3"
@@ -29,8 +31,10 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.9",
     "pg": "^8.23.1",
+    "yauzl": "^3.4.0",
     "zod": "^4.6.7"
   }
 }

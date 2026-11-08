@@ -85,7 +85,7 @@ export class CguClient {
     const parsed = expensesResponseSchema.safeParse(payload);
     if (!parsed.success) {
       throw new CguApiError(
-        "The CGU API response did not match the documented expenses format.",
+        "A resposta da API da CGU não corresponde ao formato esperado para despesas.",
         "CGU_INVALID_RESPONSE",
       );
     }
@@ -114,7 +114,7 @@ export class CguClient {
     const parsed = agencyResponseSchema.safeParse(response);
     if (!parsed.success) {
       throw new CguApiError(
-        "The CGU API response did not match the documented agency format.",
+        "A resposta da API da CGU não corresponde ao formato esperado para órgãos.",
         "CGU_INVALID_RESPONSE",
       );
     }
@@ -130,7 +130,7 @@ export class CguClient {
     const apiKey = this.apiKey?.trim();
     if (!apiKey) {
       throw new CguApiError(
-        "CGU API access is not configured on the server.",
+        "CGU_API_KEY não está configurada neste ambiente. Adicione a variável nas configurações de produção da Vercel para habilitar a consulta.",
         "CGU_API_KEY_MISSING",
       );
     }
@@ -147,19 +147,19 @@ export class CguClient {
     } catch (error) {
       if (error instanceof Error && error.name === "TimeoutError") {
         throw new CguApiError(
-          "The CGU API request timed out.",
+          "A consulta à API da CGU excedeu o tempo limite.",
           "CGU_TIMEOUT",
         );
       }
       throw new CguApiError(
-        "The CGU API could not be reached.",
+        "Não foi possível conectar à API da CGU.",
         "CGU_NETWORK_ERROR",
       );
     }
 
     if (!response.ok) {
       throw new CguApiError(
-        `The CGU API returned HTTP ${response.status}.`,
+        `A API da CGU retornou HTTP ${response.status}.`,
         "CGU_HTTP_ERROR",
         response.status,
       );
@@ -169,7 +169,7 @@ export class CguClient {
       return await response.json();
     } catch {
       throw new CguApiError(
-        "The CGU API response was not valid JSON.",
+        "A resposta da API da CGU não é um JSON válido.",
         "CGU_INVALID_RESPONSE",
       );
     }

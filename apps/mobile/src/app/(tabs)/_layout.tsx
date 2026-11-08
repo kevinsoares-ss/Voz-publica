@@ -18,7 +18,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
           borderTopColor: colors.line,
           height: Platform.OS === "web" ? 68 : 74,
           paddingBottom: Platform.OS === "web" ? 9 : 12,
@@ -33,9 +33,9 @@ export default function TabLayout() {
           key={tab.name}
           name={tab.name}
           options={{
-            title: tab.label,
-            tabBarLabel: tab.label,
-            tabBarAccessibilityLabel: tab.label,
+            title: tab.name === "index" ? "Início" : tab.label,
+            tabBarLabel: tab.name === "index" ? "Início" : tab.label,
+            tabBarAccessibilityLabel: tab.name === "index" ? "Início" : tab.label,
             tabBarIcon: ({ color, focused }) => (
               <Text
                 accessible={false}

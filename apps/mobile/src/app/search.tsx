@@ -197,7 +197,7 @@ export default function SearchScreen() {
       ))}
       {!loading && !error && !hasResults && query.trim() ? (
         <EmptyState
-          title="Nenhum resultado encontrado"
+          title="Dados não encontrados"
           body="As fontes consultadas não retornaram registros para este termo. Confira a grafia ou tente outro identificador."
         />
       ) : null}
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 48,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 12,
@@ -375,13 +375,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   disabled: { opacity: 0.6 },
-  searchButtonText: { color: colors.white, fontWeight: "800" },
+  searchButtonText: { color: colors.onPrimary, fontWeight: "800" },
   filters: { gap: 8, paddingVertical: 2 },
   chip: {
     minHeight: 40,
     paddingHorizontal: 13,
     borderRadius: 20,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     justifyContent: "center",
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     minHeight: 76,
     padding: 14,
     gap: 5,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     borderColor: colors.line,
     borderWidth: 1,

@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   groupTitle: { color: colors.muted, fontSize: 12, fontWeight: "800", marginLeft: 3 },
   menuCard: {
     overflow: "hidden",
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 16,

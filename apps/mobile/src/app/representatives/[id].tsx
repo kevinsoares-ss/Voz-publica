@@ -215,19 +215,6 @@ export default function RepresentativeProfileScreen() {
                     <Text style={styles.sourceButtonText}>Ver proposições deste deputado →</Text>
                   </Pressable>
                 ) : null}
-                {representative.sourceNamespace === "camara" ? (
-                  <Pressable
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/commitments",
-                        params: { representativeId: representative.externalId },
-                      } as Href)
-                    }
-                    style={styles.sourceButton}
-                  >
-                    <Text style={styles.sourceButtonText}>Ver compromissos documentados →</Text>
-                  </Pressable>
-                ) : null}
                 <Pressable
                   onPress={() =>
                     router.push({
@@ -376,7 +363,7 @@ const styles = StyleSheet.create({
   officialId: { color: "#B9D7C8", fontSize: 11 },
   favoriteButton: { backgroundColor: "#D2E8DA", borderRadius: 12, marginTop: 7, paddingVertical: 11, paddingHorizontal: 15 },
   favoriteText: { color: colors.forest, fontWeight: "800", fontSize: 13 },
-  section: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 },
+  section: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 },
   sectionTitle: { color: colors.ink, fontSize: 16, fontWeight: "800" },
   infoRow: { borderBottomColor: colors.line, borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: 10, gap: 3 },
   infoLabel: { color: colors.muted, fontSize: 11, fontWeight: "700" },

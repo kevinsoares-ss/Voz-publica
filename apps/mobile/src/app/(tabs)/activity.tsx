@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   cardBody: { color: "#D4DFEC", fontSize: 13, lineHeight: 20 },
   cardAction: { color: "#B7D0F1", fontSize: 13, fontWeight: "800", marginTop: 2 },
   section: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 16,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 14,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 14,

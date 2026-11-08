@@ -69,7 +69,7 @@ export default function RepresentativeExpensesScreen() {
       {!loading && error ? <ErrorState message={error} onRetry={() => void load(year)} /> : null}
       {!loading && !error && result?.data.length === 0 ? (
         <EmptyState
-          title="Nenhuma despesa retornada"
+          title="Dados não encontrados"
           body={isSenate
             ? `A sincronização oficial não retornou registros para o senador e ano ${year}. Isso descreve somente esta consulta e seus filtros.`
             : `A API oficial respondeu sem registros para o deputado e ano ${year}. Isso descreve somente esta consulta e seus filtros.`}
@@ -117,13 +117,13 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 28, fontWeight: "800", marginTop: -8 },
   subtitle: { color: colors.muted, fontSize: 13 },
   label: { color: colors.muted, fontSize: 12, fontWeight: "700", marginBottom: -8 },
-  input: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.ink },
+  input: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.ink },
   button: { backgroundColor: colors.forest, borderRadius: 12, padding: 13, alignItems: "center" },
-  buttonText: { color: colors.white, fontWeight: "800" },
+  buttonText: { color: colors.onPrimary, fontWeight: "800" },
   source: { color: colors.muted, fontSize: 11, textAlign: "center" },
   sourceButton: { backgroundColor: colors.mint, borderRadius: 12, padding: 12, alignItems: "center" },
   sourceButtonText: { color: colors.forest, fontSize: 13, fontWeight: "800" },
-  expenseCard: { backgroundColor: colors.white, borderColor: colors.line, borderWidth: 1, borderRadius: 12, padding: 14, gap: 5 },
+  expenseCard: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 12, padding: 14, gap: 5 },
   expenseTitle: { color: colors.ink, fontSize: 14, fontWeight: "800" },
   expenseDetail: { color: colors.muted, fontSize: 12 },
   expenseValue: { color: colors.forest, fontSize: 13, fontWeight: "800", marginTop: 4 },

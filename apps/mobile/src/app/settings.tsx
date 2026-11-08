@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 28, lineHeight: 34, fontWeight: "800" },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -8 },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: 16,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: colors.primary,
   },
-  primaryButtonText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  primaryButtonText: { color: colors.onPrimary, fontSize: 12, fontWeight: "800" },
   clearButton: {
     minHeight: 44,
     alignSelf: "flex-start",
