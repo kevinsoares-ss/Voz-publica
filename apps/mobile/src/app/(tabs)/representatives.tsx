@@ -35,11 +35,11 @@ export default function RepresentativesScreen() {
   const initialRole = Array.isArray(params.role) ? params.role[0] : params.role;
   const validInitialRole =
     ROLE_FILTERS.find((option) => option.value === initialRole)?.value ?? "";
-  const [query, setQuery] = useState(initialSearch ?? "");
+  const [query, setQuery] = useState("");
   const [party, setParty] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
-  const [role, setRole] = useState<Representative["role"] | "">(validInitialRole);
+  const [role, setRole] = useState<Representative["role"] | "">("");
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
