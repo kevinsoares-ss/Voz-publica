@@ -212,6 +212,7 @@ export default function RepresentativesScreen() {
       <View style={styles.clearFiltersRow}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Limpar filtros"
           onPress={() => {
             setQuery("");
             setParty("");
@@ -294,7 +295,14 @@ const styles = StyleSheet.create({
   roleChipTextSelected: { color: colors.white },
   filterInput: { flex: 1 },
   ufInput: { width: 62, textAlign: "center" },
-  clearButton: { padding: 7 },
+  clearButton: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
   clearText: { color: colors.green, fontWeight: "700", fontSize: 12 },
   activeFilters: { gap: 6 },
   activeLabel: { color: colors.muted, fontSize: 11, fontWeight: "700" },
