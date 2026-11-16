@@ -12,6 +12,10 @@ export default function Root({ children }: PropsWithChildren) {
     <html {...htmlAttributes} lang="pt-BR">
       <head>
         {headNodes}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <ScrollViewStyleReset />
       </head>
       <body {...bodyAttributes}>
