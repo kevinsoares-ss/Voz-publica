@@ -170,12 +170,6 @@ export default function HomeScreen() {
           icon="R$"
           onPress={() => router.push("/(tabs)/expenses" as Href)}
         />
-        <Shortcut
-          label="Compromissos"
-          detail="Registros documentados"
-          icon="✓"
-          onPress={() => router.push("/(tabs)/commitments" as Href)}
-        />
       </View>
 
       <Pressable
