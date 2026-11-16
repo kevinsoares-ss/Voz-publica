@@ -6,7 +6,31 @@
 **Projeto:** Voz Pública V3\
 **Plataforma:** React Native + Expo + TypeScript\
 **Escopo:** aplicativo mobile, com adaptação para Web\
-**Status:** proposta visual para validação antes da implementação
+**Status:** especificação em evolução; consultar a seção
+[Implementações já aplicadas](#implementações-já-aplicadas) para distinguir
+o que já está no app das propostas futuras.
+
+## Implementações já aplicadas
+
+As alterações abaixo já estão no aplicativo e foram publicadas na Vercel:
+
+- A versão Web declara `lang="pt-BR"` e configura o viewport para usar a
+  largura real do dispositivo, com `viewport-fit=cover`. O zoom continua
+  disponível para acessibilidade.
+- A tela inicial mantém atalhos para Agentes, Atuação e Despesas. O atalho
+  de Compromissos foi removido para simplificar essa área; a consulta continua
+  acessível em **Mais > Compromissos documentados**.
+- O diretório de órgãos substitui a busca por nome por categorias do catálogo
+  SIAFI. Ao selecionar um órgão, a consulta anual da CGU abre diretamente,
+  apresenta as despesas em cards e permite expandir os dados do registro.
+- Os filtros de agentes recebidos pela URL são aplicados após a renderização
+  inicial, preservando a hidratação do Expo Router. A tela também permite
+  limpar os filtros ativos.
+
+O ajuste de viewport foi validado nas 29 páginas exportadas e não apresentou
+rolagem horizontal nas cinco áreas principais em uma largura de 320 px. Isso
+registra as verificações já realizadas, sem substituir a validação visual das
+demais telas e tamanhos prevista neste documento.
 
 ------------------------------------------------------------------------
 
@@ -180,9 +204,10 @@ A barra inferior deve permanecer visível nas áreas principais e indicar
 o destino ativo com ícone, rótulo e realce discreto.
 
 **Decisão de UX:** compromissos não deve ocupar uma aba principal
-separada enquanto a navegação tiver cinco destinos. Pode aparecer em
-Início e em Mais. Se testes de uso mostrarem que é uma área central e
-recorrente, reavaliar a navegação.
+separada enquanto a navegação tiver cinco destinos. Na implementação atual,
+a área permanece acessível em **Mais** e não aparece como atalho em Início.
+Se testes de uso mostrarem que é uma área central e recorrente, reavaliar a
+navegação.
 
 ## 3.2 Hierarquia de rotas sugerida
 
@@ -271,15 +296,20 @@ Não solicitar cadastro para consultar informações públicas.
 **Objetivo:** orientar o cidadão e oferecer acesso rápido às principais
 consultas.
 
-**Ordem visual:** 1. Cabeçalho com marca, saudação neutra e botão de
-busca. 2. Campo de busca destacado: "Busque um representante, órgão ou
-proposição". 3. Card de destaque "Explore os representantes", com CTA
-"Ver agentes". 4. Atalhos em grade: Agentes, Atuação, Despesas e
-Compromissos. 5. Seção "Acompanhe a atuação" com proposições/votações
+**Ordem visual planejada:** 1. Cabeçalho com marca, saudação neutra e
+botão de busca. 2. Campo de busca destacado: "Busque um representante,
+órgão ou proposição". 3. Card de destaque "Explore os representantes",
+com CTA "Ver agentes". 4. Atalhos em grade para Agentes, Atuação e
+Despesas. 5. Seção "Acompanhe a atuação" com proposições/votações
 recentes, apenas se houver dados reais. 6. Seção "Transparência do
 Executivo" com entrada para consulta de órgãos e despesas da CGU. 7.
 Bloco "Sobre os dados" com última atualização e link para
 fontes/metodologia.
+
+**Implementação atual:** a tela inicial apresenta a marca, busca global,
+estado de disponibilidade do serviço, os três atalhos principais e acesso
+a fontes e metodologia. Compromissos está em **Mais**. Os demais itens
+desta ordem são propostas de evolução, não telas já entregues.
 
 **Cuidados:** não mostrar números agregados sem definir período, fonte e
 critério. Não criar rankings de "melhores" ou "piores" representantes.
@@ -425,11 +455,19 @@ resultados.
 Cada valor deve mostrar moeda, período e fonte. Não misturar despesas de
 escopos diferentes em um total único.
 
-### Tela 16 --- Busca de órgãos
+### Tela 16 --- Diretório de órgãos e despesas
 
-**Layout:** - Campo "Buscar órgão". - Resultados do catálogo oficial
-SIAFI. - Nome e identificador do órgão. - Botão de seleção. - Informação
-sobre a fonte do catálogo.
+**Layout:** - Categorias do catálogo oficial SIAFI (ministérios, agências,
+universidades, institutos e fundações). - Lista de órgãos da categoria,
+com nome e código oficial. - Ação de carregar mais resultados quando houver
+outra página. - Identificação da fonte do catálogo.
+
+**Implementação atual:** a busca por nome foi substituída pelas categorias.
+Ao tocar em um órgão com código SIAFI, a tela de despesas consulta
+automaticamente o ano atual e exibe os resultados em cards. Cada card mostra
+os valores empenhado, liquidado e pago conforme retornados pela CGU, além de
+permitir expandir os demais campos do registro. O ano pode ser alterado e
+consultado novamente. Órgãos sem código não habilitam a consulta.
 
 ### Tela 17 --- Detalhe do órgão e despesas anuais
 
@@ -798,6 +836,11 @@ tipo, com período e fonte.
 -   Filtros em bottom sheet.
 -   Cards empilhados.
 -   Gráficos com rolagem ou alternativa tabular.
+-   Na Web mobile, usar a largura real do dispositivo e respeitar as áreas
+    seguras, sem desabilitar o zoom do navegador.
+-   Verificar ausência de rolagem horizontal em larguras estreitas; a
+    verificação já feita em 320 px cobre as cinco áreas principais, não
+    todas as rotas e estados.
 
 ## Tablet
 

@@ -1,108 +1,176 @@
 import { useRouter, type Href } from "expo-router";
-import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { EmptyState, ErrorState, LoadingState } from "../components/Feedback";
 import { Screen } from "../components/Screen";
+import { AGENCY_GROUPS, type AgencyGroupId } from "../constants/cgu";
 import { getCguAgencies, type CguAgency } from "../services/api";
 import { colors } from "../theme/colors";
 
 export default function AgenciesScreen() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>("ministries");
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
-  const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [consultedAt, setConsultedAt] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const requestId = useRef(0);
 
-  const search = useCallback(async () => {
-    const term = query.trim();
-    if (term.length < 2) {
-      setError("Digite pelo menos 2 caracteres para buscar no catálogo SIAFI.");
-      return;
-    }
-    setLoading(true);
+  const loadAgencies = useCallback(async (
+    groupId: AgencyGroupId,
+    nextPage: number,
+    append = false,
+  ) => {
+    const request = ++requestId.current;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError("");
-    setSearched(true);
     try {
-      const result = await getCguAgencies(term);
-      setAgencies(result.data);
+      const group = AGENCY_GROUPS.find((item) => item.id === groupId);
+      if (!group) throw new Error("Categoria de órgãos inválida.");
+      const result = await getCguAgencies(group.search, nextPage);
+      if (request !== requestId.current) return;
+      setAgencies((current) => append ? [...current, ...result.data] : result.data);
       setConsultedAt(result.source.consultedAt);
+      setPage(result.pagination.page);
+      setHasMore(result.data.length >= 15);
     } catch (caught) {
+      if (request !== requestId.current) return;
       setError(
         caught instanceof Error
           ? caught.message
-          : "Não foi possível consultar o catálogo oficial.",
+          : "Não foi possível carregar o catálogo oficial.",
       );
     } finally {
-      setLoading(false);
+      if (request === requestId.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
-  }, [query]);
+  }, []);
+
+  useEffect(() => {
+    setAgencies([]);
+    setPage(1);
+    setHasMore(false);
+    setConsultedAt("");
+    void loadAgencies(agencyGroup, 1);
+  }, [agencyGroup, loadAgencies]);
 
   return (
     <Screen>
-      <Text style={styles.kicker}>DIRETÓRIO OFICIAL</Text>
+      <Text style={styles.kicker}>DIRETÓRIO OFICIAL · CGU</Text>
       <Text style={styles.title}>Órgãos públicos</Text>
       <Text style={styles.subtitle}>
-        Consulte o catálogo SIAFI da CGU. Os códigos e nomes são apresentados
-        conforme a fonte; nenhum identificador é presumido.
+        Escolha uma categoria e toque em um órgão para consultar as despesas
+        anuais publicadas pela CGU.
       </Text>
-      <Text style={styles.label}>Nome ou trecho do nome do órgão</Text>
-      <TextInput
-        accessibilityLabel="Buscar órgão público"
-        value={query}
-        onChangeText={setQuery}
-        onSubmitEditing={() => void search()}
-        maxLength={100}
-        placeholder="Ex.: Ministério da Saúde"
-        placeholderTextColor={colors.muted}
-        returnKeyType="search"
-        style={styles.input}
-      />
-      <Pressable
-        accessibilityRole="button"
-        disabled={loading}
-        onPress={() => void search()}
-        style={[styles.button, loading && styles.disabled]}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categories}
+        accessibilityLabel="Categorias de órgãos"
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Pesquisando..." : "Pesquisar no catálogo"}
-        </Text>
-      </Pressable>
-      {loading ? <LoadingState label="Consultando órgãos na CGU..." /> : null}
-      {!loading && error ? <ErrorState message={error} onRetry={() => void search()} /> : null}
-      {!loading && !error && searched && agencies.length === 0 ? (
-        <EmptyState
-          title="Dados não encontrados"
-          body="O catálogo SIAFI não retornou resultados para este termo. Tente parte do nome ou uma grafia diferente."
+        {AGENCY_GROUPS.map((group) => (
+          <Pressable
+            key={group.id}
+            accessibilityRole="button"
+            accessibilityState={{ selected: agencyGroup === group.id }}
+            onPress={() => setAgencyGroup(group.id)}
+            style={[
+              styles.category,
+              agencyGroup === group.id && styles.categorySelected,
+            ]}
+          >
+            <Text
+              style={[
+                styles.categoryText,
+                agencyGroup === group.id && styles.categoryTextSelected,
+              ]}
+            >
+              {group.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {loading && agencies.length === 0 ? (
+        <LoadingState label="Carregando órgãos oficiais..." />
+      ) : null}
+      {!loading && error ? (
+        <ErrorState
+          message={error}
+          onRetry={() => void loadAgencies(agencyGroup, page || 1, page > 1)}
         />
       ) : null}
-      {!error && agencies.map((agency, index) => (
+      {!loading && !error && agencies.length === 0 ? (
+        <EmptyState
+          title="Órgãos não encontrados"
+          body="A CGU não retornou órgãos para esta categoria."
+        />
+      ) : null}
+      {agencies.map((agency, index) => (
         <Pressable
           key={`${agency.codigo ?? "agency"}-${index}`}
-          accessibilityRole="link"
-          onPress={() =>
+          accessibilityRole="button"
+          accessibilityLabel={
+            agency.codigo
+              ? `Ver despesas de ${agency.descricao ?? "órgão"}`
+              : `${agency.descricao ?? "Órgão"} sem código SIAFI`
+          }
+          accessibilityState={{ disabled: !agency.codigo }}
+          disabled={!agency.codigo}
+          onPress={() => {
+            if (!agency.codigo) return;
             router.push({
               pathname: "/cgu/expenses",
               params: {
-                agencyCode: agency.codigo ?? "",
+                agencyCode: agency.codigo,
                 agencyName: agency.descricao ?? "",
+                category: agencyGroup,
               },
-            } as Href)
-          }
-          style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+            } as Href);
+          }}
+          style={({ pressed }) => [
+            styles.card,
+            pressed && styles.pressed,
+            !agency.codigo && styles.disabledCard,
+          ]}
         >
           <View style={styles.cardCopy}>
             <Text style={styles.cardTitle}>
               {agency.descricao ?? "Nome não informado pela fonte"}
             </Text>
             <Text style={styles.cardMeta}>
-              Código SIAFI: {agency.codigo ?? "não informado"}
+              {agency.codigo
+                ? `Código SIAFI: ${agency.codigo} · ver despesas`
+                : "Sem código SIAFI; despesas indisponíveis"}
             </Text>
           </View>
-          <Text style={styles.arrow} accessible={false}>›</Text>
+          {agency.codigo ? (
+            <Text style={styles.arrow} accessible={false}>›</Text>
+          ) : null}
         </Pressable>
       ))}
+      {loading && agencies.length > 0 ? (
+        <LoadingState label="Carregando mais órgãos oficiais..." />
+      ) : null}
+      {hasMore && agencies.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={loadingMore}
+          onPress={() => void loadAgencies(agencyGroup, page + 1, true)}
+          style={[styles.moreButton, loadingMore && styles.disabled]}
+        >
+          <Text style={styles.moreButtonText}>
+            {loadingMore ? "Carregando..." : "Carregar mais órgãos"}
+          </Text>
+        </Pressable>
+      ) : null}
       {consultedAt ? (
         <Text style={styles.source}>
           Portal da Transparência — CGU · consultado em{" "}
@@ -118,25 +186,21 @@ const styles = StyleSheet.create({
   kicker: { color: colors.primary, fontSize: 11, fontWeight: "800", letterSpacing: 0.7 },
   title: { color: colors.ink, fontSize: 28, lineHeight: 34, fontWeight: "800" },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, marginTop: -8 },
-  label: { color: colors.ink, fontSize: 13, fontWeight: "700" },
-  input: {
-    minHeight: 48,
+  categories: { flexDirection: "row", gap: 8, paddingVertical: 2 },
+  category: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 18,
     paddingHorizontal: 13,
-    color: colors.ink,
+    paddingVertical: 9,
   },
-  button: {
-    minHeight: 46,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
+  categorySelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
   },
-  disabled: { opacity: 0.6 },
-  buttonText: { color: colors.onPrimary, fontWeight: "800" },
+  categoryText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
+  categoryTextSelected: { color: colors.primary, fontWeight: "800" },
   card: {
     minHeight: 72,
     flexDirection: "row",
@@ -149,9 +213,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   pressed: { opacity: 0.82 },
+  disabledCard: { opacity: 0.65 },
   cardCopy: { flex: 1, gap: 5 },
   cardTitle: { color: colors.ink, fontSize: 14, fontWeight: "800" },
   cardMeta: { color: colors.muted, fontSize: 12 },
   arrow: { color: colors.primary, fontSize: 24 },
+  moreButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 13,
+    alignItems: "center",
+  },
+  disabled: { opacity: 0.6 },
+  moreButtonText: { color: colors.onPrimary, fontWeight: "800" },
   source: { color: colors.muted, fontSize: 11, lineHeight: 17, textAlign: "center" },
 });

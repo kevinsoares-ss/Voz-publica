@@ -22,7 +22,7 @@ export default function MoreScreen() {
         />
         <MenuItem
           title="Órgãos públicos"
-          description="Consulte o catálogo SIAFI da CGU."
+          description="Escolha uma categoria e consulte despesas por órgão."
           onPress={() => router.push("/agencies" as Href)}
         />
         <MenuItem

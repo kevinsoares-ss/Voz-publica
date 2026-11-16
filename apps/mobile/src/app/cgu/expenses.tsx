@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import {
   Linking,
@@ -16,6 +16,7 @@ import {
   Notice,
 } from "../../components/Feedback";
 import { Screen } from "../../components/Screen";
+import { AGENCY_GROUPS, type AgencyGroupId } from "../../constants/cgu";
 import {
   getCguAgencies,
   getCguAnnualExpenses,
@@ -25,19 +26,12 @@ import {
 import { colors } from "../../theme/colors";
 
 type Result = Awaited<ReturnType<typeof getCguAnnualExpenses>>;
-const AGENCY_GROUPS = [
-  { id: "ministries", label: "Ministérios", search: "Ministério" },
-  { id: "agencies", label: "Agências", search: "Agência" },
-  { id: "universities", label: "Universidades", search: "Universidade" },
-  { id: "institutes", label: "Institutos", search: "Instituto" },
-  { id: "foundations", label: "Fundações", search: "Fundação" },
-] as const;
-type AgencyGroupId = (typeof AGENCY_GROUPS)[number]["id"];
 
 export default function CguExpensesScreen() {
   const params = useLocalSearchParams<{
     agencyCode?: string;
     agencyName?: string;
+    category?: string;
   }>();
   const agencyCode = Array.isArray(params.agencyCode)
     ? params.agencyCode[0]
@@ -45,10 +39,16 @@ export default function CguExpensesScreen() {
   const agencyName = Array.isArray(params.agencyName)
     ? params.agencyName[0]
     : params.agencyName;
+  const category = Array.isArray(params.category)
+    ? params.category[0]
+    : params.category;
+  const validCategory = AGENCY_GROUPS.find((group) => group.id === category)?.id;
   const [yearText, setYearText] = useState(String(new Date().getFullYear()));
   const [year, setYear] = useState(new Date().getFullYear());
   const [page, setPage] = useState(1);
-  const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>("ministries");
+  const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>(
+    validCategory ?? "ministries",
+  );
   const [agencyPage, setAgencyPage] = useState(1);
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
   const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(
@@ -65,47 +65,49 @@ export default function CguExpensesScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedExpense, setExpandedExpense] = useState<number | null>(null);
+  const expenseRequestId = useRef(0);
+  const agencyRequestId = useRef(0);
 
-  useEffect(() => {
-    if (!agencyCode) return;
-    setSelectedAgency({ codigo: agencyCode, descricao: agencyName ?? null });
-    setResult(null);
-    setError("");
-    setHasMore(true);
-  }, [agencyCode, agencyName]);
-
-  async function loadAgencyPage(
+  const loadAgencyPage = useCallback(async (
     groupId: AgencyGroupId,
     nextPage: number,
     append = false,
-  ) {
+  ) => {
+    const request = ++agencyRequestId.current;
     setLoadingAgencies(true);
     setAgencyError("");
     try {
       const group = AGENCY_GROUPS.find((item) => item.id === groupId);
       if (!group) throw new Error("Categoria de órgãos inválida.");
       const response = await getCguAgencies(group.search, nextPage);
+      if (request !== agencyRequestId.current) return;
       setAgencies((current) =>
         append ? [...current, ...response.data] : response.data,
       );
       setAgencyPage(nextPage);
       setHasMoreAgencies(response.data.length >= 15);
     } catch (caught) {
+      if (request !== agencyRequestId.current) return;
       setAgencyError(
         caught instanceof Error
           ? caught.message
           : "Não foi possível carregar o catálogo oficial da CGU.",
       );
     } finally {
-      setLoadingAgencies(false);
+      if (request === agencyRequestId.current) setLoadingAgencies(false);
     }
-  }
-
-  useEffect(() => {
-    void loadAgencyPage("ministries", 1);
   }, []);
 
-  const load = useCallback(async (nextYear: number, nextPage = 1) => {
+  useEffect(() => {
+    void loadAgencyPage(agencyGroup, 1);
+  }, [agencyGroup, loadAgencyPage]);
+
+  const load = useCallback(async (
+    nextYear: number,
+    nextPage: number,
+    agency: CguAgency | null,
+  ) => {
+    const request = ++expenseRequestId.current;
     if (
       !Number.isInteger(nextYear) ||
       nextYear < 2000 ||
@@ -116,8 +118,10 @@ export default function CguExpensesScreen() {
       setLoadingMore(false);
       return;
     }
-    if (!selectedAgency?.codigo) {
+    if (!agency?.codigo) {
       setError("Escolha um órgão da lista oficial antes da consulta.");
+      setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
@@ -128,9 +132,10 @@ export default function CguExpensesScreen() {
       const response = await getCguAnnualExpenses({
         year: nextYear,
         page: nextPage,
-        agencyCode: selectedAgency.codigo,
+        agencyCode: agency.codigo,
       });
-      if (nextPage === 1 || !result) {
+      if (request !== expenseRequestId.current) return;
+      if (nextPage === 1) {
         setResult(response);
         setHasMore(response.data.length > 0);
       } else if (response.data.length === 0) {
@@ -143,18 +148,50 @@ export default function CguExpensesScreen() {
       setYear(nextYear);
       setPage(nextPage);
     } catch (caught) {
+      if (request !== expenseRequestId.current) return;
       setError(
         caught instanceof Error
           ? caught.message
           : "Não foi possível consultar a CGU.",
       );
     } finally {
+      if (request === expenseRequestId.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (validCategory) setAgencyGroup(validCategory);
+  }, [validCategory]);
+
+  useEffect(() => {
+    if (!agencyCode) {
+      setSelectedAgency(null);
+      setResult(null);
+      setError("");
+      setHasMore(true);
+      expenseRequestId.current += 1;
       setLoading(false);
       setLoadingMore(false);
+      return;
     }
-  }, [result, selectedAgency]);
+
+    const agency = { codigo: agencyCode, descricao: agencyName ?? null };
+    setSelectedAgency(agency);
+    setResult(null);
+    setError("");
+    setHasMore(true);
+    void load(new Date().getFullYear(), 1, agency);
+  }, [agencyCode, agencyName, load]);
 
   function chooseAgencyGroup(groupId: AgencyGroupId) {
+    if (groupId === agencyGroup) return;
+    agencyRequestId.current += 1;
+    expenseRequestId.current += 1;
+    setLoading(false);
+    setLoadingMore(false);
     setAgencyGroup(groupId);
     setSelectedAgency(null);
     setResult(null);
@@ -162,14 +199,17 @@ export default function CguExpensesScreen() {
     setAgencies([]);
     setAgencyPage(1);
     setHasMoreAgencies(true);
-    void loadAgencyPage(groupId, 1);
+    setLoadingAgencies(false);
   }
 
   function chooseAgency(agency: CguAgency) {
+    if (!agency.codigo) return;
     setSelectedAgency(agency);
     setResult(null);
     setHasMore(true);
     setError("");
+    setExpandedExpense(null);
+    void load(Number(yearText), 1, agency);
   }
 
   return (
@@ -188,11 +228,25 @@ export default function CguExpensesScreen() {
     <TextInput
       value={yearText}
       onChangeText={setYearText}
+      onSubmitEditing={() => {
+        if (selectedAgency) void load(Number(yearText), 1, selectedAgency);
+      }}
+      returnKeyType="search"
       keyboardType="number-pad"
       maxLength={4}
       style={styles.input}
       accessibilityLabel="Ano das despesas da CGU"
     />
+    {selectedAgency && Number(yearText) !== year ? (
+      <Pressable
+        accessibilityRole="button"
+        disabled={loading}
+        onPress={() => void load(Number(yearText), 1, selectedAgency)}
+        style={[styles.button, loading && styles.disabledButton]}
+      >
+        <Text style={styles.buttonText}>Atualizar despesas para {yearText}</Text>
+      </Pressable>
+    ) : null}
     <Text style={styles.sectionTitle}>Órgãos e ministérios</Text>
     <Text style={styles.meta}>
       Escolha uma categoria para listar os órgãos do cadastro oficial SIAFI.
@@ -245,10 +299,12 @@ export default function CguExpensesScreen() {
           key={`${agency.codigo ?? "orgao"}-${index}`}
           accessibilityRole="button"
           accessibilityState={{ selected: selectedAgency?.codigo === agency.codigo }}
+          disabled={!agency.codigo}
           onPress={() => chooseAgency(agency)}
           style={[
             styles.agencyOption,
             selectedAgency?.codigo === agency.codigo ? styles.selectedAgency : null,
+            !agency.codigo && styles.disabledButton,
           ]}
         >
           <Text style={styles.agencyOptionName}>
@@ -271,17 +327,6 @@ export default function CguExpensesScreen() {
           </Text>
         </Pressable>
       ) : null}
-      {selectedAgency ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => void load(Number(yearText), 1)}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>
-            Consultar despesas de {selectedAgency.descricao ?? "órgão selecionado"}
-          </Text>
-        </Pressable>
-      ) : null}
       {!selectedAgency && !loadingAgencies && !agencyError ? (
         <EmptyState
           title="Selecione um órgão oficial"
@@ -293,7 +338,7 @@ export default function CguExpensesScreen() {
         <ErrorState
           message={error}
           onRetry={() => {
-            if (selectedAgency) void load(year, page);
+            if (selectedAgency) void load(year, page, selectedAgency);
             else void loadAgencyPage(agencyGroup, agencyPage, agencyPage > 1);
           }}
         />
@@ -320,7 +365,7 @@ export default function CguExpensesScreen() {
             <Pressable
               accessibilityRole="button"
               disabled={loadingMore}
-              onPress={() => void load(year, page + 1)}
+              onPress={() => void load(year, page + 1, selectedAgency)}
               style={styles.moreButton}
             >
               <Text style={styles.buttonText}>
@@ -467,6 +512,7 @@ const styles = StyleSheet.create({
     padding: 13,
     alignItems: "center",
   },
+  disabledButton: { opacity: 0.6 },
   buttonText: { color: colors.onPrimary, fontWeight: "800" },
   card: {
     backgroundColor: colors.surface,

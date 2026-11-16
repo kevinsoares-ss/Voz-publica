@@ -23,7 +23,7 @@ export default function ExpensesHubScreen() {
       />
       <ExpenseLink
         title="Diretório de órgãos"
-        description="Pesquise órgãos pelo nome no catálogo oficial SIAFI."
+        description="Escolha uma categoria e abra as despesas anuais de cada órgão."
         source="Portal da Transparência · CGU"
         onPress={() => router.push("/agencies" as Href)}
       />
