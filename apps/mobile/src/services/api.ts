@@ -263,6 +263,7 @@ export function getCguAnnualExpenses(options: {
   year: number;
   page: number;
   agencyCode?: string;
+  superiorAgencyCode?: string;
 }): Promise<{
   data: CguAnnualExpense[];
   source: OfficialList["source"];
@@ -273,7 +274,46 @@ export function getCguAnnualExpenses(options: {
     page: String(options.page),
   });
   if (options.agencyCode) query.set("orgao", options.agencyCode);
+  if (options.superiorAgencyCode) {
+    query.set("orgaoSuperior", options.superiorAgencyCode);
+  }
   return request(`/api/cgu/expenses?${query.toString()}`);
+}
+
+export async function getCguAgencyAnnualExpenses(options: {
+  year: number;
+  page: number;
+  agencyCode: string;
+}): Promise<{
+  data: CguAnnualExpense[];
+  source: OfficialList["source"];
+  pagination: { page: number };
+}> {
+  const [directExpenses, subordinateExpenses] = await Promise.all([
+    getCguAnnualExpenses({
+      year: options.year,
+      page: options.page,
+      agencyCode: options.agencyCode,
+    }),
+    getCguAnnualExpenses({
+      year: options.year,
+      page: options.page,
+      superiorAgencyCode: options.agencyCode,
+    }),
+  ]);
+  const seen = new Set<string>();
+  const data = [...directExpenses.data, ...subordinateExpenses.data].filter(
+    (expense) => {
+      const key = expense.codigoOrgao
+        ? `${expense.ano ?? options.year}:${expense.codigoOrgao}`
+        : JSON.stringify(expense);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    },
+  );
+
+  return { ...subordinateExpenses, data };
 }
 
 export function getCguAgencies(search: string, page = 1): Promise<{

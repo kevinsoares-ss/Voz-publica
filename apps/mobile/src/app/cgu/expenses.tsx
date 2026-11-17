@@ -19,13 +19,13 @@ import { CguExpenseCard } from "../../components/CguExpenseCard";
 import { Screen } from "../../components/Screen";
 import { AGENCY_GROUPS, type AgencyGroupId } from "../../constants/cgu";
 import {
+  getCguAgencyAnnualExpenses,
   getCguAgencies,
-  getCguAnnualExpenses,
   type CguAgency,
 } from "../../services/api";
 import { colors } from "../../theme/colors";
 
-type Result = Awaited<ReturnType<typeof getCguAnnualExpenses>>;
+type Result = Awaited<ReturnType<typeof getCguAgencyAnnualExpenses>>;
 
 export default function CguExpensesScreen() {
   const params = useLocalSearchParams<{
@@ -129,7 +129,7 @@ export default function CguExpensesScreen() {
     else setLoadingMore(true);
     setError("");
     try {
-      const response = await getCguAnnualExpenses({
+      const response = await getCguAgencyAnnualExpenses({
         year: nextYear,
         page: nextPage,
         agencyCode: agency.codigo,
@@ -211,6 +211,12 @@ export default function CguExpensesScreen() {
     setExpandedExpense(null);
     void load(Number(yearText), 1, agency);
   }
+
+  const displayedAgencies =
+    selectedAgency?.codigo &&
+    !agencies.some((agency) => agency.codigo === selectedAgency.codigo)
+      ? [selectedAgency, ...agencies]
+      : agencies;
 
   return (
     <Screen>
@@ -294,27 +300,111 @@ export default function CguExpensesScreen() {
         body="A CGU não retornou órgãos nesta categoria."
       />
     ) : null}
-      {agencies.map((agency, index) => (
-        <Pressable
-          key={`${agency.codigo ?? "orgao"}-${index}`}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedAgency?.codigo === agency.codigo }}
-          disabled={!agency.codigo}
-          onPress={() => chooseAgency(agency)}
-          style={[
-            styles.agencyOption,
-            selectedAgency?.codigo === agency.codigo ? styles.selectedAgency : null,
-            !agency.codigo && styles.disabledButton,
-          ]}
-        >
-          <Text style={styles.agencyOptionName}>
-            {agency.descricao ?? "Nome não informado pela fonte"}
-          </Text>
-          <Text style={styles.meta}>
-            Código SIAFI: {agency.codigo ?? "Não informado pela fonte"}
-          </Text>
-        </Pressable>
-      ))}
+      {displayedAgencies.map((agency, index) => {
+        const isSelected = selectedAgency?.codigo === agency.codigo;
+        return (
+          <View
+            key={`${agency.codigo ?? "orgao"}-${index}`}
+            style={styles.agencyEntry}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected, expanded: isSelected }}
+              disabled={!agency.codigo}
+              onPress={() => chooseAgency(agency)}
+              style={[
+                styles.agencyOption,
+                isSelected ? styles.selectedAgency : null,
+                !agency.codigo && styles.disabledButton,
+              ]}
+            >
+              <Text style={styles.agencyOptionName}>
+                {agency.descricao ?? "Nome não informado pela fonte"}
+              </Text>
+              <Text style={styles.meta}>
+                Código SIAFI: {agency.codigo ?? "Não informado pela fonte"}
+                {isSelected ? " · despesas abaixo" : " · ver despesas"}
+              </Text>
+            </Pressable>
+            {isSelected ? (
+              <View style={styles.resultsPanel}>
+                <Text style={styles.resultsTitle}>
+                  Despesas de {agency.descricao ?? "órgão selecionado"}
+                </Text>
+                <Text style={styles.meta}>
+                  Inclui despesas diretamente vinculadas e de órgãos subordinados.
+                </Text>
+                {loading ? (
+                  <LoadingState label="Consultando a fonte oficial da CGU..." />
+                ) : null}
+                {!loading && error ? (
+                  <ErrorState
+                    message={error}
+                    onRetry={() => void load(year, page, selectedAgency)}
+                  />
+                ) : null}
+                {!loading && !error && result?.data.length === 0 ? (
+                  <EmptyState
+                    title="Dados não encontrados"
+                    body={`A CGU não retornou despesas para ${year}. O catálogo também inclui unidades históricas ou em extinção; tente outro órgão ou período.`}
+                  />
+                ) : null}
+                {!loading && !error && result ? (
+                  <>
+                    {result.data.map((expense, expenseIndex) => (
+                      <CguExpenseCard
+                        key={`${expense.codigoOrgao ?? "orgao"}-${expenseIndex}`}
+                        expense={expense}
+                        expanded={expandedExpense === expenseIndex}
+                        onToggle={() =>
+                          setExpandedExpense((current) =>
+                            current === expenseIndex ? null : expenseIndex,
+                          )
+                        }
+                      />
+                    ))}
+                    {result.data.length > 0 && hasMore ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={loadingMore}
+                        onPress={() =>
+                          void load(year, page + 1, selectedAgency)
+                        }
+                        style={styles.moreButton}
+                      >
+                        <Text style={styles.buttonText}>
+                          {loadingMore
+                            ? "Carregando..."
+                            : "Carregar próxima página"}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                    <Text style={styles.source}>
+                      Fonte: {result.source.name} · consultada em{" "}
+                      {formatDate(result.source.consultedAt)}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={() =>
+                        void Linking.openURL(result.source.url).catch(() =>
+                          setError(
+                            "Não foi possível abrir o endereço oficial da CGU.",
+                          ),
+                        )
+                      }
+                      style={styles.sourceButton}
+                    >
+                      <Text style={styles.sourceButtonText}>
+                        Abrir consulta oficial ↗
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
       {hasMoreAgencies && agencies.length > 0 ? (
         <Pressable
           accessibilityRole="button"
@@ -332,63 +422,6 @@ export default function CguExpensesScreen() {
           title="Selecione um órgão oficial"
           body="As despesas anuais por órgão exigem um código SIAFI retornado pela lista oficial. Nenhum código é presumido."
         />
-      ) : null}
-      {loading ? <LoadingState label="Consultando a fonte oficial da CGU..." /> : null}
-      {!loading && error ? (
-        <ErrorState
-          message={error}
-          onRetry={() => {
-            if (selectedAgency) void load(year, page, selectedAgency);
-            else void loadAgencyPage(agencyGroup, agencyPage, agencyPage > 1);
-          }}
-        />
-      ) : null}
-      {!loading && !error && result?.data.length === 0 ? (
-        <EmptyState
-          title="Dados não encontrados"
-          body={`A CGU não retornou registros para a página consultada de ${year}. Isso descreve somente esta consulta; não significa que as despesas do período sejam zero.`}
-        />
-      ) : null}
-      {!loading && !error && result ? (
-        <>
-          {result.data.map((expense, index) => (
-            <CguExpenseCard
-              key={`${expense.codigoOrgao ?? "orgao"}-${index}`}
-              expense={expense}
-              expanded={expandedExpense === index}
-              onToggle={() =>
-                setExpandedExpense((current) => current === index ? null : index)
-              }
-            />
-          ))}
-          {result.data.length > 0 && hasMore ? (
-            <Pressable
-              accessibilityRole="button"
-              disabled={loadingMore}
-              onPress={() => void load(year, page + 1, selectedAgency)}
-              style={styles.moreButton}
-            >
-              <Text style={styles.buttonText}>
-                {loadingMore ? "Carregando..." : "Carregar próxima página"}
-              </Text>
-            </Pressable>
-          ) : null}
-          <Text style={styles.source}>
-            Fonte: {result.source.name} · consultada em{" "}
-            {formatDate(result.source.consultedAt)}
-          </Text>
-          <Pressable
-            accessibilityRole="link"
-            onPress={() =>
-              void Linking.openURL(result.source.url).catch(() =>
-                setError("Não foi possível abrir o endereço oficial da CGU."),
-              )
-            }
-            style={styles.sourceButton}
-          >
-            <Text style={styles.sourceButtonText}>Abrir consulta oficial ↗</Text>
-          </Pressable>
-        </>
       ) : null}
     </Screen>
   );
@@ -441,6 +474,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: { opacity: 0.6 },
   buttonText: { color: colors.onPrimary, fontWeight: "800" },
+  agencyEntry: { gap: 8 },
   agencyOption: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
@@ -451,6 +485,15 @@ const styles = StyleSheet.create({
   },
   selectedAgency: { borderColor: colors.green, borderWidth: 2 },
   agencyOptionName: { color: colors.ink, fontSize: 13, fontWeight: "700" },
+  resultsPanel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+  },
+  resultsTitle: { color: colors.ink, fontSize: 15, fontWeight: "800" },
   meta: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   moreButton: {
     backgroundColor: colors.green,

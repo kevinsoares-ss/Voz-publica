@@ -17,13 +17,13 @@ import { CguExpenseCard } from "../components/CguExpenseCard";
 import { Screen } from "../components/Screen";
 import { AGENCY_GROUPS, type AgencyGroupId } from "../constants/cgu";
 import {
+  getCguAgencyAnnualExpenses,
   getCguAgencies,
-  getCguAnnualExpenses,
   type CguAgency,
 } from "../services/api";
 import { colors } from "../theme/colors";
 
-type ExpenseResult = Awaited<ReturnType<typeof getCguAnnualExpenses>>;
+type ExpenseResult = Awaited<ReturnType<typeof getCguAgencyAnnualExpenses>>;
 
 export default function AgenciesScreen() {
   const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>("ministries");
@@ -124,7 +124,7 @@ export default function AgenciesScreen() {
     }
     setExpenseError("");
     try {
-      const result = await getCguAnnualExpenses({
+      const result = await getCguAgencyAnnualExpenses({
         year: nextYear,
         page: nextPage,
         agencyCode: agency.codigo,
@@ -348,7 +348,7 @@ export default function AgenciesScreen() {
                 {!loadingExpenses && !expenseError && expenseSource && expenses.length === 0 ? (
                   <EmptyState
                     title="Dados não encontrados"
-                    body={`A CGU não retornou registros para ${year}. Isso descreve somente esta consulta; não significa que as despesas do período sejam zero.`}
+                    body={`A CGU não retornou registros para ${year}. O catálogo pode incluir unidades históricas ou em extinção; tente outro órgão ou período. Esta consulta vazia não significa que as despesas sejam zero.`}
                   />
                 ) : null}
                 {expenses.map((expense, expenseIndex) => (

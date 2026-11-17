@@ -22,8 +22,10 @@ As alterações abaixo já estão no aplicativo e foram publicadas na Vercel:
   acessível em **Mais > Compromissos documentados**.
 - O diretório de órgãos substitui a busca por nome por categorias do catálogo
   SIAFI. Ao tocar em um órgão, seus cards de despesas aparecem expandidos logo
-  abaixo do item, sem sair da lista. A consulta anual usa o código SIAFI
-  selecionado; dados adicionais podem ser carregados em páginas seguintes.
+  abaixo do item, sem sair da lista. A tela de Despesas do Executivo também
+  mostra os resultados logo abaixo do órgão selecionado. As consultas combinam
+  despesas vinculadas diretamente ao código SIAFI e às unidades subordinadas;
+  dados adicionais podem ser carregados em páginas seguintes.
 - Os filtros de agentes recebidos pela URL são aplicados após a renderização
   inicial, preservando a hidratação do Expo Router. A tela também permite
   limpar os filtros ativos.
@@ -468,9 +470,12 @@ Ao tocar em um órgão com código SIAFI, a própria linha se expande e consulta
 automaticamente o ano atual; os cards aparecem logo abaixo do órgão
 selecionado, sem navegar para outra tela nem mostrar os resultados no fim da
 lista. Cada card mostra os valores empenhado, liquidado e pago conforme
-retornados pela CGU e permite expandir os demais campos do registro. É possível
-alterar o ano, carregar páginas adicionais de despesas e abrir a consulta na
-fonte oficial. Órgãos sem código não habilitam a consulta.
+retornados pela CGU e permite expandir os demais campos do registro. A consulta
+busca também as unidades subordinadas ao órgão; unidades históricas ou sem
+registros no período exibem o estado vazio informado pela fonte. A tela de
+Despesas do Executivo apresenta os mesmos cards expandidos logo abaixo do órgão
+selecionado. É possível alterar o ano, carregar páginas adicionais de despesas
+e abrir a consulta na fonte oficial. Órgãos sem código não habilitam a consulta.
 
 ### Tela 17 --- Detalhe do órgão e despesas anuais
 
