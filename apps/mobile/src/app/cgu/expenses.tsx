@@ -51,11 +51,7 @@ export default function CguExpensesScreen() {
   );
   const [agencyPage, setAgencyPage] = useState(1);
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
-  const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(
-    agencyCode
-      ? { codigo: agencyCode, descricao: agencyName ?? null }
-      : null,
-  );
+  const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(null);
   const [loadingAgencies, setLoadingAgencies] = useState(false);
   const [hasMoreAgencies, setHasMoreAgencies] = useState(true);
   const [agencyError, setAgencyError] = useState("");
