@@ -21,8 +21,9 @@ As alterações abaixo já estão no aplicativo e foram publicadas na Vercel:
   de Compromissos foi removido para simplificar essa área; a consulta continua
   acessível em **Mais > Compromissos documentados**.
 - O diretório de órgãos substitui a busca por nome por categorias do catálogo
-  SIAFI. Ao selecionar um órgão, a consulta anual da CGU abre diretamente,
-  apresenta as despesas em cards e permite expandir os dados do registro.
+  SIAFI. Ao tocar em um órgão, seus cards de despesas aparecem expandidos logo
+  abaixo do item, sem sair da lista. A consulta anual usa o código SIAFI
+  selecionado; dados adicionais podem ser carregados em páginas seguintes.
 - Os filtros de agentes recebidos pela URL são aplicados após a renderização
   inicial, preservando a hidratação do Expo Router. A tela também permite
   limpar os filtros ativos.
@@ -463,11 +464,13 @@ com nome e código oficial. - Ação de carregar mais resultados quando houver
 outra página. - Identificação da fonte do catálogo.
 
 **Implementação atual:** a busca por nome foi substituída pelas categorias.
-Ao tocar em um órgão com código SIAFI, a tela de despesas consulta
-automaticamente o ano atual e exibe os resultados em cards. Cada card mostra
-os valores empenhado, liquidado e pago conforme retornados pela CGU, além de
-permitir expandir os demais campos do registro. O ano pode ser alterado e
-consultado novamente. Órgãos sem código não habilitam a consulta.
+Ao tocar em um órgão com código SIAFI, a própria linha se expande e consulta
+automaticamente o ano atual; os cards aparecem logo abaixo do órgão
+selecionado, sem navegar para outra tela nem mostrar os resultados no fim da
+lista. Cada card mostra os valores empenhado, liquidado e pago conforme
+retornados pela CGU e permite expandir os demais campos do registro. É possível
+alterar o ano, carregar páginas adicionais de despesas e abrir a consulta na
+fonte oficial. Órgãos sem código não habilitam a consulta.
 
 ### Tela 17 --- Detalhe do órgão e despesas anuais
 

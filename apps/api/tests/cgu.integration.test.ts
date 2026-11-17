@@ -120,12 +120,16 @@ test("CGU client reports missing keys, upstream failures, and invalid responses"
 });
 
 test("CGU expenses route validates filters and returns source provenance", async () => {
+  const requestedUrls: URL[] = [];
   const cguClient = new CguClient({
     apiKey: "test-secret",
-    fetchImplementation: async (input) =>
-      new URL(String(input)).pathname.endsWith("/orgaos-siafi")
+    fetchImplementation: async (input) => {
+      const url = new URL(String(input));
+      requestedUrls.push(url);
+      return url.pathname.endsWith("/orgaos-siafi")
         ? Response.json([{ codigo: "12345", descricao: "Ministério de Teste" }])
-        : Response.json(expenseFixture),
+        : Response.json(expenseFixture);
+    },
   });
   const server = createApiServer({ cguClient });
   server.listen(0, "127.0.0.1");
@@ -144,6 +148,13 @@ test("CGU expenses route validates filters and returns source provenance", async
     assert.equal(body.source.name, "Portal da Transparência — Controladoria-Geral da União");
     assert.equal(body.source.url.includes("test-secret"), false);
     assert.equal(body.pagination.page, 1);
+    assert.equal(requestedUrls[0].searchParams.get("orgaoSuperior"), "123");
+
+    const agencyExpenses = await fetch(
+      `${baseUrl}/api/cgu/expenses?year=2025&page=1&orgao=12345`,
+    );
+    assert.equal(agencyExpenses.status, 200);
+    assert.equal(requestedUrls[1].searchParams.get("orgao"), "12345");
 
     const invalidYear = await fetch(
       `${baseUrl}/api/cgu/expenses?year=9999`,
