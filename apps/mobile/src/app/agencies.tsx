@@ -17,18 +17,20 @@ import { CguExpenseCard } from "../components/CguExpenseCard";
 import { Screen } from "../components/Screen";
 import { AGENCY_GROUPS, type AgencyGroupId } from "../constants/cgu";
 import {
-  getCguAgencyAnnualExpenses,
-  getCguAgencies,
+  getCguAgencyDirectoryPage,
+  getCguAgencyExpensesWithFallback,
+  replaceCguAgencyInList,
   type CguAgency,
+  type CguAgencyExpenseLookup,
 } from "../services/api";
 import { colors } from "../theme/colors";
 
-type ExpenseResult = Awaited<ReturnType<typeof getCguAgencyAnnualExpenses>>;
+type ExpenseResult = CguAgencyExpenseLookup["result"];
 
 export default function AgenciesScreen() {
   const [agencyGroup, setAgencyGroup] = useState<AgencyGroupId>("ministries");
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
-  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [loadingAgencies, setLoadingAgencies] = useState(true);
   const [loadingMoreAgencies, setLoadingMoreAgencies] = useState(false);
   const [agencyError, setAgencyError] = useState("");
   const [agencyPage, setAgencyPage] = useState(1);
@@ -64,17 +66,14 @@ export default function AgenciesScreen() {
     try {
       const group = AGENCY_GROUPS.find((item) => item.id === groupId);
       if (!group) throw new Error("Categoria de órgãos inválida.");
-      const result = await getCguAgencies(group.search, nextPage);
+      const result = await getCguAgencyDirectoryPage(group.search, nextPage);
       if (request !== agencyRequestId.current) return;
-      const activeAgencies = result.data.filter(
-        (agency) => !agency.descricao?.toLowerCase().includes("em extinção"),
-      );
       setAgencies((current) =>
-        append ? [...current, ...activeAgencies] : activeAgencies,
+        append ? [...current, ...result.data] : result.data,
       );
       setConsultedAt(result.source.consultedAt);
       setAgencyPage(result.pagination.page);
-      setHasMoreAgencies(result.data.length >= 15);
+      setHasMoreAgencies(result.hasMore);
     } catch (caught) {
       if (request !== agencyRequestId.current) return;
       setAgencyError(
@@ -129,58 +128,31 @@ export default function AgenciesScreen() {
     }
     setExpenseError("");
     try {
-      let resolvedAgency = agency;
-      let result = await getCguAgencyAnnualExpenses({
+      const lookup = await getCguAgencyExpensesWithFallback({
+        agency,
         year: nextYear,
         page: nextPage,
-        agencyCode: agency.codigo,
+        shouldContinue: () => request === expenseRequestId.current,
       });
-      if (request !== expenseRequestId.current) return;
-
-      if (nextPage === 1 && result.data.length === 0 && agency.descricao) {
-        const catalog = await getCguAgencies(agency.descricao, 1);
-        if (request !== expenseRequestId.current) return;
-        const alternatives = catalog.data.filter(
-          (candidate) =>
-            candidate.codigo &&
-            candidate.codigo !== agency.codigo &&
-            candidate.descricao?.trim() === agency.descricao?.trim(),
+      if (!lookup || request !== expenseRequestId.current) return;
+      const result = lookup.result;
+      const fallbackFromCode = lookup.fallbackFromCode;
+      if (fallbackFromCode && lookup.agency.codigo) {
+        setSelectedAgency(lookup.agency);
+        setAgencies((current) =>
+          replaceCguAgencyInList(
+            current,
+            fallbackFromCode,
+            lookup.agency,
+          ),
         );
-        for (const candidate of alternatives) {
-          if (!candidate.codigo) continue;
-          const alternativeResult = await getCguAgencyAnnualExpenses({
-            year: nextYear,
-            page: 1,
-            agencyCode: candidate.codigo,
-          });
-          if (request !== expenseRequestId.current) return;
-          if (alternativeResult.data.length > 0) {
-            resolvedAgency = candidate;
-            result = alternativeResult;
-            break;
-          }
-        }
-        if (resolvedAgency.codigo !== agency.codigo) {
-          const resolvedCode = resolvedAgency.codigo;
-          setSelectedAgency(resolvedAgency);
-          setAgencies((current) => {
-            const replaced = current.map((item) =>
-              item.codigo === agency.codigo ? resolvedAgency : item,
-            );
-            return replaced.filter(
-              (item, index, all) =>
-                !item.codigo ||
-                all.findIndex((other) => other.codigo === item.codigo) === index,
-            );
-          });
-          setAgencyCodeNotice(
-            `O código ${agency.codigo} não retornou dados; encontramos despesas no código SIAFI ${resolvedCode}.`,
-          );
-        } else if (alternatives.length > 0) {
-          setAgencyCodeNotice(
-            `O código ${agency.codigo} e outros códigos do catálogo para este órgão não retornaram despesas neste ano.`,
-          );
-        }
+        setAgencyCodeNotice(
+          `O código ${fallbackFromCode} não retornou dados; encontramos despesas no código SIAFI ${lookup.agency.codigo}.`,
+        );
+      } else if (lookup.hasAlternativeCodes) {
+        setAgencyCodeNotice(
+          `O código ${agency.codigo} e outros códigos do catálogo para este órgão não retornaram despesas neste ano.`,
+        );
       }
 
       if (nextPage === 1) {
@@ -242,6 +214,7 @@ export default function AgenciesScreen() {
       setExpenses([]);
       setExpenseSource(null);
       setExpenseError("");
+      setAgencyCodeNotice("");
       setLoadingExpenses(false);
       setLoadingMoreExpenses(false);
       return;
@@ -306,7 +279,7 @@ export default function AgenciesScreen() {
           onRetry={() => void loadAgencies(agencyGroup, agencyPage, agencyPage > 1)}
         />
       ) : null}
-      {!loadingAgencies && !agencyError && agencies.length === 0 ? (
+      {!loadingAgencies && !agencyError && agencies.length === 0 && !hasMoreAgencies ? (
         <EmptyState
           title="Órgãos não encontrados"
           body="A CGU não retornou órgãos para esta categoria."
@@ -406,7 +379,7 @@ export default function AgenciesScreen() {
                 {!loadingExpenses && !expenseError && expenseSource && expenses.length === 0 ? (
                   <EmptyState
                     title="Dados não encontrados"
-                    body={`A CGU não retornou registros para ${year}. O catálogo pode incluir unidades históricas ou em extinção; tente outro órgão ou período. Esta consulta vazia não significa que as despesas sejam zero.`}
+                    body={`A CGU não retornou despesas para ${agency.descricao ?? "este órgão"} (código SIAFI ${agency.codigo}) no ano ${year}. Tente outro ano ou órgão; esta consulta vazia não significa que as despesas sejam zero.`}
                   />
                 ) : null}
                 {expenses.map((expense, expenseIndex) => (
@@ -473,7 +446,7 @@ export default function AgenciesScreen() {
       {loadingAgencies && agencies.length > 0 ? (
         <LoadingState label="Carregando mais órgãos oficiais..." />
       ) : null}
-      {hasMoreAgencies && agencies.length > 0 ? (
+      {hasMoreAgencies && (agencies.length > 0 || !loadingAgencies) ? (
         <Pressable
           accessibilityRole="button"
           disabled={loadingMoreAgencies}

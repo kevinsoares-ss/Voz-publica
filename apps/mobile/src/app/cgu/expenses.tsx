@@ -19,13 +19,15 @@ import { CguExpenseCard } from "../../components/CguExpenseCard";
 import { Screen } from "../../components/Screen";
 import { AGENCY_GROUPS, type AgencyGroupId } from "../../constants/cgu";
 import {
-  getCguAgencyAnnualExpenses,
-  getCguAgencies,
+  getCguAgencyDirectoryPage,
+  getCguAgencyExpensesWithFallback,
+  replaceCguAgencyInList,
   type CguAgency,
+  type CguAgencyExpenseLookup,
 } from "../../services/api";
 import { colors } from "../../theme/colors";
 
-type Result = Awaited<ReturnType<typeof getCguAgencyAnnualExpenses>>;
+type Result = CguAgencyExpenseLookup["result"];
 
 export default function CguExpensesScreen() {
   const params = useLocalSearchParams<{
@@ -52,7 +54,7 @@ export default function CguExpensesScreen() {
   const [agencyPage, setAgencyPage] = useState(1);
   const [agencies, setAgencies] = useState<CguAgency[]>([]);
   const [selectedAgency, setSelectedAgency] = useState<CguAgency | null>(null);
-  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const [loadingAgencies, setLoadingAgencies] = useState(true);
   const [hasMoreAgencies, setHasMoreAgencies] = useState(true);
   const [agencyError, setAgencyError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
@@ -60,6 +62,7 @@ export default function CguExpensesScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [agencyCodeNotice, setAgencyCodeNotice] = useState("");
   const [expandedExpense, setExpandedExpense] = useState<number | null>(null);
   const expenseRequestId = useRef(0);
   const agencyRequestId = useRef(0);
@@ -75,13 +78,13 @@ export default function CguExpensesScreen() {
     try {
       const group = AGENCY_GROUPS.find((item) => item.id === groupId);
       if (!group) throw new Error("Categoria de órgãos inválida.");
-      const response = await getCguAgencies(group.search, nextPage);
+      const response = await getCguAgencyDirectoryPage(group.search, nextPage);
       if (request !== agencyRequestId.current) return;
       setAgencies((current) =>
         append ? [...current, ...response.data] : response.data,
       );
       setAgencyPage(nextPage);
-      setHasMoreAgencies(response.data.length >= 15);
+      setHasMoreAgencies(response.hasMore);
     } catch (caught) {
       if (request !== agencyRequestId.current) return;
       setAgencyError(
@@ -121,16 +124,35 @@ export default function CguExpensesScreen() {
       return;
     }
 
-    if (nextPage === 1) setLoading(true);
+    if (nextPage === 1) {
+      setLoading(true);
+      setAgencyCodeNotice("");
+    }
     else setLoadingMore(true);
     setError("");
     try {
-      const response = await getCguAgencyAnnualExpenses({
+      const lookup = await getCguAgencyExpensesWithFallback({
+        agency,
         year: nextYear,
         page: nextPage,
-        agencyCode: agency.codigo,
+        shouldContinue: () => request === expenseRequestId.current,
       });
-      if (request !== expenseRequestId.current) return;
+      if (!lookup || request !== expenseRequestId.current) return;
+      const response = lookup.result;
+      const fallbackFromCode = lookup.fallbackFromCode;
+      if (fallbackFromCode && lookup.agency.codigo) {
+        setSelectedAgency(lookup.agency);
+        setAgencies((current) =>
+          replaceCguAgencyInList(current, fallbackFromCode, lookup.agency),
+        );
+        setAgencyCodeNotice(
+          `O código ${fallbackFromCode} não retornou dados; encontramos despesas no código SIAFI ${lookup.agency.codigo}.`,
+        );
+      } else if (lookup.hasAlternativeCodes) {
+        setAgencyCodeNotice(
+          `O código ${agency.codigo} e outros códigos do catálogo para este órgão não retornaram despesas neste ano.`,
+        );
+      }
       if (nextPage === 1) {
         setResult(response);
         setHasMore(response.data.length > 0);
@@ -167,6 +189,7 @@ export default function CguExpensesScreen() {
       setSelectedAgency(null);
       setResult(null);
       setError("");
+      setAgencyCodeNotice("");
       setHasMore(true);
       expenseRequestId.current += 1;
       setLoading(false);
@@ -192,10 +215,11 @@ export default function CguExpensesScreen() {
     setSelectedAgency(null);
     setResult(null);
     setError("");
+    setAgencyCodeNotice("");
     setAgencies([]);
     setAgencyPage(1);
     setHasMoreAgencies(true);
-    setLoadingAgencies(false);
+    setLoadingAgencies(true);
   }
 
   function chooseAgency(agency: CguAgency) {
@@ -204,6 +228,7 @@ export default function CguExpensesScreen() {
     setResult(null);
     setHasMore(true);
     setError("");
+    setAgencyCodeNotice("");
     setExpandedExpense(null);
     void load(Number(yearText), 1, agency);
   }
@@ -290,7 +315,7 @@ export default function CguExpensesScreen() {
         onRetry={() => void loadAgencyPage(agencyGroup, agencyPage, agencyPage > 1)}
       />
     ) : null}
-    {!loadingAgencies && !agencyError && agencies.length === 0 ? (
+    {!loadingAgencies && !agencyError && agencies.length === 0 && !hasMoreAgencies ? (
       <EmptyState
         title="Órgãos não encontrados"
         body="A CGU não retornou órgãos nesta categoria."
@@ -330,6 +355,9 @@ export default function CguExpensesScreen() {
                 <Text style={styles.meta}>
                   Inclui despesas diretamente vinculadas e de órgãos subordinados.
                 </Text>
+                {agencyCodeNotice ? (
+                  <Text style={styles.meta}>{agencyCodeNotice}</Text>
+                ) : null}
                 {loading ? (
                   <LoadingState label="Consultando a fonte oficial da CGU..." />
                 ) : null}
@@ -342,7 +370,7 @@ export default function CguExpensesScreen() {
                 {!loading && !error && result?.data.length === 0 ? (
                   <EmptyState
                     title="Dados não encontrados"
-                    body={`A CGU não retornou despesas para ${year}. O catálogo também inclui unidades históricas ou em extinção; tente outro órgão ou período.`}
+                    body={`A CGU não retornou despesas para ${agency.descricao ?? "este órgão"} (código SIAFI ${agency.codigo}) no ano ${year}. Tente outro ano ou órgão; esta consulta vazia não significa que as despesas sejam zero.`}
                   />
                 ) : null}
                 {!loading && !error && result ? (
@@ -401,7 +429,9 @@ export default function CguExpensesScreen() {
           </View>
         );
       })}
-      {hasMoreAgencies && agencies.length > 0 ? (
+      {hasMoreAgencies &&
+      !agencyError &&
+      (agencies.length > 0 || !loadingAgencies) ? (
         <Pressable
           accessibilityRole="button"
           disabled={loadingAgencies}
@@ -413,7 +443,7 @@ export default function CguExpensesScreen() {
           </Text>
         </Pressable>
       ) : null}
-      {!selectedAgency && !loadingAgencies && !agencyError ? (
+      {!selectedAgency && agencies.length > 0 && !loadingAgencies && !agencyError ? (
         <EmptyState
           title="Selecione um órgão oficial"
           body="As despesas anuais por órgão exigem um código SIAFI retornado pela lista oficial. Nenhum código é presumido."

@@ -325,6 +325,95 @@ export function getCguAgencies(search: string, page = 1): Promise<{
   return request(`/api/cgu/agencies?${query.toString()}`);
 }
 
+export async function getCguAgencyDirectoryPage(search: string, page = 1) {
+  const result = await getCguAgencies(search, page);
+  return {
+    ...result,
+    data: result.data.filter(
+      (agency) => !agency.descricao?.toLowerCase().includes("em extinção"),
+    ),
+    hasMore: result.data.length >= 15,
+  };
+}
+
+export function replaceCguAgencyInList(
+  agencies: CguAgency[],
+  previousCode: string,
+  replacement: CguAgency,
+): CguAgency[] {
+  const replaced = agencies.map((agency) =>
+    agency.codigo === previousCode ? replacement : agency,
+  );
+  return replaced.filter(
+    (agency, index, all) =>
+      !agency.codigo ||
+      all.findIndex((other) => other.codigo === agency.codigo) === index,
+  );
+}
+
+export type CguAgencyExpenseLookup = {
+  agency: CguAgency;
+  result: Awaited<ReturnType<typeof getCguAgencyAnnualExpenses>>;
+  fallbackFromCode: string | null;
+  hasAlternativeCodes: boolean;
+};
+
+export async function getCguAgencyExpensesWithFallback(options: {
+  agency: CguAgency;
+  year: number;
+  page: number;
+  shouldContinue?: () => boolean;
+}): Promise<CguAgencyExpenseLookup | null> {
+  const originalCode = options.agency.codigo;
+  if (!originalCode) {
+    throw new Error("Este órgão não possui código SIAFI para consultar despesas.");
+  }
+
+  const shouldContinue = options.shouldContinue ?? (() => true);
+  let agency = options.agency;
+  let result = await getCguAgencyAnnualExpenses({
+    year: options.year,
+    page: options.page,
+    agencyCode: originalCode,
+  });
+  if (!shouldContinue()) return null;
+  let hasAlternativeCodes = false;
+  const description = options.agency.descricao?.trim();
+
+  if (options.page === 1 && result.data.length === 0 && description) {
+    const catalog = await getCguAgencies(description, 1);
+    if (!shouldContinue()) return null;
+    const alternatives = catalog.data.filter(
+      (candidate) =>
+        candidate.codigo &&
+        candidate.codigo !== originalCode &&
+        candidate.descricao?.trim() === description,
+    );
+    hasAlternativeCodes = alternatives.length > 0;
+
+    for (const candidate of alternatives) {
+      if (!candidate.codigo) continue;
+      const alternativeResult = await getCguAgencyAnnualExpenses({
+        year: options.year,
+        page: 1,
+        agencyCode: candidate.codigo,
+      });
+      if (!shouldContinue()) return null;
+      if (alternativeResult.data.length === 0) continue;
+      agency = candidate;
+      result = alternativeResult;
+      break;
+    }
+  }
+
+  return {
+    agency,
+    result,
+    fallbackFromCode: agency.codigo === originalCode ? null : originalCode,
+    hasAlternativeCodes,
+  };
+}
+
 export function getProposals(options: {
   page: number;
   year: number;
