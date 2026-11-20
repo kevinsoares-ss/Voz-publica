@@ -46,6 +46,7 @@ export default function AgenciesScreen() {
   const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [loadingMoreExpenses, setLoadingMoreExpenses] = useState(false);
   const [expenseError, setExpenseError] = useState("");
+  const [agencyCodeNotice, setAgencyCodeNotice] = useState("");
   const [expandedExpense, setExpandedExpense] = useState<number | null>(null);
 
   const agencyRequestId = useRef(0);
@@ -119,17 +120,66 @@ export default function AgenciesScreen() {
       setExpenseSource(null);
       setHasMoreExpenses(false);
       setLoadingExpenses(true);
+      setAgencyCodeNotice("");
     } else {
       setLoadingMoreExpenses(true);
     }
     setExpenseError("");
     try {
-      const result = await getCguAgencyAnnualExpenses({
+      let resolvedAgency = agency;
+      let result = await getCguAgencyAnnualExpenses({
         year: nextYear,
         page: nextPage,
         agencyCode: agency.codigo,
       });
       if (request !== expenseRequestId.current) return;
+
+      if (nextPage === 1 && result.data.length === 0 && agency.descricao) {
+        const catalog = await getCguAgencies(agency.descricao, 1);
+        if (request !== expenseRequestId.current) return;
+        const alternatives = catalog.data.filter(
+          (candidate) =>
+            candidate.codigo &&
+            candidate.codigo !== agency.codigo &&
+            candidate.descricao?.trim() === agency.descricao?.trim(),
+        );
+        for (const candidate of alternatives) {
+          if (!candidate.codigo) continue;
+          const alternativeResult = await getCguAgencyAnnualExpenses({
+            year: nextYear,
+            page: 1,
+            agencyCode: candidate.codigo,
+          });
+          if (request !== expenseRequestId.current) return;
+          if (alternativeResult.data.length > 0) {
+            resolvedAgency = candidate;
+            result = alternativeResult;
+            break;
+          }
+        }
+        if (resolvedAgency.codigo !== agency.codigo) {
+          const resolvedCode = resolvedAgency.codigo;
+          setSelectedAgency(resolvedAgency);
+          setAgencies((current) => {
+            const replaced = current.map((item) =>
+              item.codigo === agency.codigo ? resolvedAgency : item,
+            );
+            return replaced.filter(
+              (item, index, all) =>
+                !item.codigo ||
+                all.findIndex((other) => other.codigo === item.codigo) === index,
+            );
+          });
+          setAgencyCodeNotice(
+            `O código ${agency.codigo} não retornou dados; encontramos despesas no código SIAFI ${resolvedCode}.`,
+          );
+        } else if (alternatives.length > 0) {
+          setAgencyCodeNotice(
+            `O código ${agency.codigo} e outros códigos do catálogo para este órgão não retornaram despesas neste ano.`,
+          );
+        }
+      }
+
       if (nextPage === 1) {
         setExpenses(result.data);
         setHasMoreExpenses(result.data.length > 0);
@@ -170,6 +220,7 @@ export default function AgenciesScreen() {
     setExpenses([]);
     setExpenseSource(null);
     setExpenseError("");
+    setAgencyCodeNotice("");
     setLoadingExpenses(false);
     setLoadingMoreExpenses(false);
     const defaultYear = new Date().getFullYear();
@@ -197,6 +248,7 @@ export default function AgenciesScreen() {
     setExpenses([]);
     setExpenseSource(null);
     setExpenseError("");
+    setAgencyCodeNotice("");
     setHasMoreExpenses(false);
     setExpensePage(1);
     setExpandedExpense(null);
@@ -335,6 +387,9 @@ export default function AgenciesScreen() {
                     </Text>
                   </Pressable>
                 </View>
+                {agencyCodeNotice ? (
+                  <Text style={styles.expenseHint}>{agencyCodeNotice}</Text>
+                ) : null}
 
                 {loadingExpenses && expenses.length === 0 ? (
                   <LoadingState label="Consultando despesas na CGU..." />
