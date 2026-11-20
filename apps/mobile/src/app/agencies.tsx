@@ -66,8 +66,11 @@ export default function AgenciesScreen() {
       if (!group) throw new Error("Categoria de órgãos inválida.");
       const result = await getCguAgencies(group.search, nextPage);
       if (request !== agencyRequestId.current) return;
+      const activeAgencies = result.data.filter(
+        (agency) => !agency.descricao?.toLowerCase().includes("em extinção"),
+      );
       setAgencies((current) =>
-        append ? [...current, ...result.data] : result.data,
+        append ? [...current, ...activeAgencies] : activeAgencies,
       );
       setConsultedAt(result.source.consultedAt);
       setAgencyPage(result.pagination.page);
