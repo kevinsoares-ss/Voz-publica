@@ -13,6 +13,7 @@
   "scripts": {
     "dev:api": "npm run dev --workspace @voz-publica/api",
     "dev:mobile": "npm run start --workspace @voz-publica/mobile",
+    "dev:web": "npm run web --workspace @voz-publica/mobile",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "dependencies": {

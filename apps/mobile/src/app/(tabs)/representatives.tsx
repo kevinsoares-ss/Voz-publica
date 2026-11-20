@@ -30,9 +30,16 @@ const ROLE_FILTERS: Array<{
 
 export default function RepresentativesScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ search?: string; role?: string }>();
+  const params = useLocalSearchParams<{
+    search?: string;
+    role?: string;
+    party?: string;
+    state?: string;
+  }>();
   const initialSearch = Array.isArray(params.search) ? params.search[0] : params.search;
   const initialRole = Array.isArray(params.role) ? params.role[0] : params.role;
+  const initialParty = Array.isArray(params.party) ? params.party[0] : params.party;
+  const initialState = Array.isArray(params.state) ? params.state[0] : params.state;
   const validInitialRole =
     ROLE_FILTERS.find((option) => option.value === initialRole)?.value ?? "";
   const [query, setQuery] = useState("");
@@ -89,7 +96,9 @@ export default function RepresentativesScreen() {
   useEffect(() => {
     setQuery(initialSearch ?? "");
     setRole(validInitialRole);
-  }, [initialSearch, validInitialRole]);
+    if (initialParty !== undefined) setParty(initialParty);
+    if (initialState !== undefined) setState(initialState);
+  }, [initialSearch, validInitialRole, initialParty, initialState]);
 
   useFocusEffect(
     useCallback(() => {

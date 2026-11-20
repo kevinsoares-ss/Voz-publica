@@ -467,9 +467,57 @@ export function getExpenses(options: {
   );
 }
 
+export type DashboardSummary = {
+  generatedAt: string;
+  agents: {
+    total: number;
+    lastSyncedAt: string | null;
+    byRole: Array<{ role: Representative["role"]; count: number }>;
+    topParties: Array<{ party: string; count: number }>;
+  };
+  senateCeaps: {
+    year: number | null;
+    spenders: Array<{
+      id: string;
+      name: string;
+      party: string | null;
+      state: string | null;
+      photoUrl: string | null;
+      total: string;
+    }>;
+    source: {
+      type: string;
+      name: string;
+      url: string;
+      consultedAt: string;
+    } | null;
+  };
+  executive: {
+    year: number;
+    agencies: Array<{
+      code: string;
+      name: string;
+      year: number;
+      empenhado: string | null;
+      pago: string | null;
+    }>;
+    source: {
+      type: string;
+      name: string;
+      url: string;
+      consultedAt: string;
+    } | null;
+    unavailable: string | null;
+  };
+};
+
 export async function checkApiHealth(): Promise<boolean> {
   const health = await request<{ status: string }>("/api/health");
   return health.status === "ok";
+}
+
+export function getDashboard(): Promise<DashboardSummary> {
+  return request("/api/dashboard");
 }
 
 export const officialExpensesUrl = (id: string, year: number) => {

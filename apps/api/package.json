@@ -14,7 +14,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:test": "tsc --noEmit -p tsconfig.test.json && tsx --test tests/database.integration.test.ts tests/api.integration.test.ts tests/camara.integration.test.ts tests/senado.integration.test.ts tests/records.integration.test.ts tests/cgu.integration.test.ts tests/tse.integration.test.ts",
+    "db:test": "tsc --noEmit -p tsconfig.test.json && tsx --test tests/database.integration.test.ts tests/api.integration.test.ts tests/dashboard.integration.test.ts tests/camara.integration.test.ts tests/senado.integration.test.ts tests/records.integration.test.ts tests/cgu.integration.test.ts tests/tse.integration.test.ts",
     "camara:sync:representatives": "tsx src/integrations/camara/sync-representatives.ts",
     "senado:sync:representatives": "tsx src/integrations/senado/sync-senators.ts",
     "senado:sync:expenses": "tsx src/integrations/senado/sync-expenses.ts",

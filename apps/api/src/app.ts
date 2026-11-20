@@ -9,6 +9,7 @@ import {
   getPolitician,
   listPoliticians,
 } from "./modules/politicians/routes.js";
+import { getDashboard } from "./modules/dashboard/routes.js";
 import {
   individualVotes,
   listProposals,
@@ -138,6 +139,11 @@ async function handleRequest(
       }
       throw error;
     }
+    return;
+  }
+
+  if (url.pathname === "/api/dashboard") {
+    await getDashboard(response, cguClient);
     return;
   }
 

@@ -108,8 +108,12 @@ permitem consultar despesas anuais do Executivo Federal. Configure
 variáveis de ambiente de produção da Vercel; a chave nunca deve ser colocada
 no app mobile.
 As telas principais seguem a direção institucional do planejamento UX/UI V3:
-Início, Agentes, Atuação, Despesas e Mais. O app permanece público e não
-apresenta cadastro ou login de cidadão.
+Início, Agentes, Atuação, Despesas e Mais. Na versão Web, o documento declara
+o idioma `pt-BR`, evitando que o navegador trate os rótulos da interface como
+texto em inglês. Os filtros de agentes vindos pela URL são aplicados após a
+renderização inicial para manter a hidratação do Expo Router consistente; a
+tela também oferece uma ação visível para limpar todos os filtros. O app
+permanece público e não apresenta cadastro ou login de cidadão.
 Também oferece busca global por agentes, órgãos SIAFI e identificadores de
 proposições da Câmara, diretório de órgãos, detalhes das fontes, ajuda e
 preferência de aparência persistida localmente. A busca legislativa respeita
